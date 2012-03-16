@@ -1,0 +1,14 @@
+#!/bin/bash
+
+mkdir -p /var/openstack/compute
+mkdir -p /var/log/openstack
+mkdir -p /var/openstack/compute/instances
+
+for s in openstack-compute-api openstack-compute-scheduler openstack-compute-network openstack-compute-cpu
+do
+	cp supervisor/${s}.conf /etc/supervisor/conf.d/
+	supervisorctl update ${s}
+done
+
+supervisorctl status
+

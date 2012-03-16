@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mkdir -p /var/openstack/imagestore
+mkdir -p /var/log/openstack
+
+cp supervisor/openstack-imagestore-registry.conf /etc/supervisor/conf.d/
+supervisorctl update openstack-imagestore-registry
+
+cp supervisor/openstack-imagestore-api.conf /etc/supervisor/conf.d/
+supervisorctl update openstack-imagestore-api

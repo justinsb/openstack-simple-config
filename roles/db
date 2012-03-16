@@ -1,0 +1,14 @@
+#!/bin/bash
+
+apt-get install --yes postgresql-9.1 
+
+su -c "psql -c 'CREATE DATABASE nova'" postgres
+su -c "psql -c \"CREATE USER nova WITH PASSWORD '${DB_PASSWORD}'\"" postgres
+su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE nova TO nova'" postgres
+
+su -c "psql -c 'CREATE DATABASE keystone'" postgres
+su -c "psql -c \"CREATE USER keystone WITH PASSWORD '${DB_PASSWORD}'\"" postgres
+su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE keystone TO keystone'" postgres
+
+
+

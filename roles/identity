@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mkdir -p /var/openstack/identity
+mkdir -p /var/log/openstack
+mkdir -p /var/log/openstack/identity
+
+cp supervisor/openstack-identity.conf /etc/supervisor/conf.d/
+
+supervisorctl update openstack-identity
+

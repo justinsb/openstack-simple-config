@@ -1,0 +1,6 @@
+#!/bin/bash
+
+apt-get install --yes rabbitmq-server
+
+sudo rabbitmqctl change_password guest ${RABBIT_PASSWORD}
+
