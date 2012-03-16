@@ -1,0 +1,17 @@
+#!/bin/bash
+
+mkdir -p /opt/openstack
+
+pushd /opt/openstack
+
+# Grab the source code for anything we can lay our hands on
+git clone https://github.com/openstack/nova.git
+git clone https://github.com/openstack/glance.git
+git clone https://github.com/openstack/swift.git
+git clone https://github.com/openstack/keystone.git
+git clone https://github.com/openstack/horizon.git
+git clone https://github.com/openstack/python-novaclient.git
+git clone https://github.com/openstack/python-keystoneclient.git
+git clone https://github.com/cloudbuilders/noVNC.git
+
+popd
