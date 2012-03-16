@@ -1,29 +1,55 @@
 #!/usr/bin/env python
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-import iniparse
-import sys
 import argparse
+import iniparse
+import random
+import string
+import sys
+
+def generate_random():
+    length = 12
+    symbols = string.letters + string.digits
+    r = random.SystemRandom()
+
+    return ''.join([r.choice(symbols) for _i in xrange(length)])
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('configfile')
 parser.add_argument('section')
 parser.add_argument('option')
+parser.add_argument('--create', action='store_true', help='Generate random value if not found')
 
 args = parser.parse_args()
 
 config = iniparse.ConfigParser()
 config.read(args.configfile)
 
+dirty = False
+
 if not config.has_section(args.section):
-    sys.stderr.write('Section not found')
-    sys.exit(1)
+    if args.create:
+        config.add_section(args.section)
+        dirty = True
+    else:
+        sys.stderr.write('Section not found')
+        sys.exit(1)
 
 if not config.has_option(args.section, args.option):
-    sys.stderr.write('Option not found')
-    sys.exit(1)
+    if args.create:
+        value = generate_random()
+        config.set(args.section, args.option, value)
+        dirty = True
+    else:
+        sys.stderr.write('Option not found')
+        sys.exit(1)
 
 value = config.get(args.section, args.option)
+
+if dirty:
+    with open(args.configfile, 'w') as configfile:
+        config.write(configfile)
 
 sys.stdout.write(value)
 sys.exit(0)
