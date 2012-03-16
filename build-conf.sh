@@ -3,6 +3,7 @@
 . load-conf
 
 mkdir -p /var/openstack/imagestore/conf
+mkdir -p /var/log/openstack/imagestore
 
 cp /opt/openstack/glance/etc/* /var/openstack/imagestore/conf/
 # policy.json has to be in /etc/glance
@@ -27,12 +28,12 @@ glance_config /var/openstack/imagestore/conf/glance-api-paste.ini
 glance_config /var/openstack/imagestore/conf/glance-registry.conf
 glance_config /var/openstack/imagestore/conf/glance-registry-paste.ini
 
-cat > /var/openstack/imagestore/conf/glance-api.conf << EOF
+cat >> /var/openstack/imagestore/conf/glance-api.conf << EOF
 [paste_deploy]
 flavor = keystone
 EOF
 
-cat > /var/openstack/imagestore/conf/glance-registry.conf << EOF
+cat >> /var/openstack/imagestore/conf/glance-registry.conf << EOF
 [paste_deploy]
 flavor = keystone
 EOF
