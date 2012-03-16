@@ -8,15 +8,20 @@ NETWORK_INTERFACE=eth0
 NETWORK_GATEWAY=192.168.1.1
 BRIDGE_INTERFACE=br100
 
-MY_IP=`/sbin/ifconfig ${NETWORK_INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
+if [[ "$MY_IP" == "" ]]; then
+	MY_IP=`/sbin/ifconfig ${NETWORK_INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
+fi
 
 echo "MY_IP=${MY_IP}"
 
 HEAD_IP=${HEAD_IP}
 
+utils/openstack-config-set /etc/openstack/openstack.conf network head_node ${HEAD_IP}
+
 utils/generate-secrets
 
 DB_PASSWORD_COMPUTE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets compute_db_password`
+RABBIT_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets rabbitmq_password`
 
 # Build (template) compute specific config file
 cat > /etc/openstack/compute.conf << EOF

@@ -15,8 +15,15 @@ cp /opt/openstack/glance/etc/policy.json /etc/glance/policy.json
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT log_file /var/log/openstack/imagestore/api.log
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT log_file /var/log/openstack/imagestore/registry.log
 
-utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf paste_depoy flavor keystone
-utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf paste_depoy flavor keystone
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf paste_deploy flavor keystone
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf paste_deploy flavor keystone
+
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT debug True
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT debug True
+
+SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+SERVICE_USER=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_username --default glance`
+SERVICE_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_password`
 
 # Modified from devstack
 function glance_config {
@@ -26,10 +33,6 @@ function glance_config {
         s,%SERVICE_PASSWORD%,$SERVICE_PASSWORD,g;
     " -i $1
 }
-
-SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
-SERVICE_USER=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_username --default glance`
-SERVICE_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_password`
 
 glance_config /var/openstack/imagestore/conf/glance-api.conf
 glance_config /var/openstack/imagestore/conf/glance-api-paste.ini
@@ -41,3 +44,6 @@ supervisorctl update openstack-imagestore-registry
 
 cp supervisor/openstack-imagestore-api.conf /etc/supervisor/conf.d/
 supervisorctl update openstack-imagestore-api
+
+supervisorctl status
+
