@@ -1,14 +1,17 @@
 #!/bin/bash
 
+DB_PASSWORD_COMPUTE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets db_password_compute`
+DB_PASSWORD_IDENTITY=`utils/openstack-config-get /etc/openstack/openstack.conf secrets db_password_identity`
+
 apt-get install --yes postgresql-9.1 
 
-su -c "psql -c 'CREATE DATABASE nova'" postgres
-su -c "psql -c \"CREATE USER nova WITH PASSWORD '${DB_PASSWORD}'\"" postgres
-su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE nova TO nova'" postgres
+su -c "psql -c 'CREATE DATABASE openstack_compute'" postgres
+su -c "psql -c \"CREATE USER openstack_compute WITH PASSWORD '${DB_PASSWORD_COMPUTE}'\"" postgres
+su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_compute TO openstack_compute'" postgres
 
-su -c "psql -c 'CREATE DATABASE keystone'" postgres
-su -c "psql -c \"CREATE USER keystone WITH PASSWORD '${DB_PASSWORD}'\"" postgres
-su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE keystone TO keystone'" postgres
+su -c "psql -c 'CREATE DATABASE openstack_identity'" postgres
+su -c "psql -c \"CREATE USER openstack_identity WITH PASSWORD '${DB_PASSWORD_IDENTITY}'\"" postgres
+su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_identity TO openstack_identity'" postgres
 
 
 

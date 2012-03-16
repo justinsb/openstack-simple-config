@@ -28,16 +28,8 @@ glance_config /var/openstack/imagestore/conf/glance-api-paste.ini
 glance_config /var/openstack/imagestore/conf/glance-registry.conf
 glance_config /var/openstack/imagestore/conf/glance-registry-paste.ini
 
-cat >> /var/openstack/imagestore/conf/glance-api.conf << EOF
-[paste_deploy]
-flavor = keystone
-EOF
-
-cat >> /var/openstack/imagestore/conf/glance-registry.conf << EOF
-[paste_deploy]
-flavor = keystone
-EOF
-
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf paste_depoy flavor keystone
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf paste_depoy flavor keystone
 
 mkdir -p /var/openstack/identity
 

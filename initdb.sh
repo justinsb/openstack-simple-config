@@ -2,10 +2,12 @@
 
 . load-secrets
 
+export PYTHONPATH="/opt/openstack/python-novaclient/:/opt/openstack/glance/"
+
 pushd /opt/openstack/nova
-PYTHONPATH=/opt/openstack/python-novaclient/:/opt/openstack/glance/ bin/nova-manage --conf /var/openstack/compute/compute.conf db  sync 
+bin/nova-manage --conf /var/openstack/compute/compute.conf db sync 
 popd
 
 pushd /opt/openstack/keystone
-bin/keystone-manage --conf /var/openstack/identity/keystone.conf db_sync
+bin/keystone-manage --conf /var/openstack/identity/identity.conf db_sync
 popd

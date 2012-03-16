@@ -20,32 +20,41 @@ parser.add_argument('configfile')
 parser.add_argument('section')
 parser.add_argument('option')
 parser.add_argument('--create', action='store_true', help='Generate random value if not found')
+parser.add_argument('--default', help='Default value if not found')
 
 args = parser.parse_args()
 
 config = iniparse.ConfigParser()
 config.read(args.configfile)
 
+def read_value(section, option):
+    if not config.has_section(section):
+        return None
+    if not config.has_option(section, option):
+        return None
+    return config.get(section, option)
+
+
+def write_value(section, option, value):
+    if not config.has_section(section):
+        config.add_section(section)
+    config.set(section, option, value)
+
+
 dirty = False
 
-if not config.has_section(args.section):
-    if args.create:
-        config.add_section(args.section)
-        dirty = True
-    else:
-        sys.stderr.write('Section not found')
-        sys.exit(1)
+value = read_value(args.section, args.option)
 
-if not config.has_option(args.section, args.option):
+if value is None:
     if args.create:
         value = generate_random()
-        config.set(args.section, args.option, value)
+        write_value(args.section, args.option, value)
         dirty = True
+    elif args.default:
+        value = args.default
     else:
-        sys.stderr.write('Option not found')
+        sys.stderr.write('Value not found')
         sys.exit(1)
-
-value = config.get(args.section, args.option)
 
 if dirty:
     with open(args.configfile, 'w') as configfile:
