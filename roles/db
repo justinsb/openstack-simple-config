@@ -2,6 +2,7 @@
 
 DB_PASSWORD_COMPUTE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets compute_db_password`
 DB_PASSWORD_IDENTITY=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_db_password`
+DB_PASSWORD_IMAGESTORE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_db_password`
 
 apt-get install --yes postgresql-9.1 
 
@@ -12,6 +13,10 @@ apt-get install --yes postgresql-9.1
 su -c "psql -c 'CREATE DATABASE openstack_compute'" postgres
 su -c "psql -c \"CREATE USER openstack_compute WITH PASSWORD '${DB_PASSWORD_COMPUTE}'\"" postgres
 su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_compute TO openstack_compute'" postgres
+
+su -c "psql -c 'CREATE DATABASE openstack_imagestore'" postgres
+su -c "psql -c \"CREATE USER openstack_imagestore WITH PASSWORD '${DB_PASSWORD_IMAGESTORE}'\"" postgres
+su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_imagestore TO openstack_imagestore'" postgres
 
 su -c "psql -c 'CREATE DATABASE openstack_identity'" postgres
 su -c "psql -c \"CREATE USER openstack_identity WITH PASSWORD '${DB_PASSWORD_IDENTITY}'\"" postgres

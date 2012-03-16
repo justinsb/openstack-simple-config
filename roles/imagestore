@@ -12,8 +12,13 @@ cp /opt/openstack/glance/etc/* /var/openstack/imagestore/conf
 mkdir -p /etc/glance
 cp /opt/openstack/glance/etc/policy.json /etc/glance/policy.json
 
+DB_PASSWORD_IMAGESTORE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_db_password`
+DB_CONNECTION="postgresql://openstack_imagestore:${DB_PASSWORD_IMAGESTORE}@localhost/openstack_imagestore"
+
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT log_file /var/log/openstack/imagestore/api.log
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT log_file /var/log/openstack/imagestore/registry.log
+
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT sql_connection $DB_CONNECTION
 
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf paste_deploy flavor keystone
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf paste_deploy flavor keystone
