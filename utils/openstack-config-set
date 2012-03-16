@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+import iniparse
+import sys
+import argparse
+
+# Based on Fedora's packaging script, but rewritten because I'm not sure of the license...
+
+parser = argparse.ArgumentParser()
+parser.add_argument('configfile')
+parser.add_argument('section')
+parser.add_argument('option')
+parser.add_argument('value')
+
+args = parser.parse_args()
+
+config = iniparse.ConfigParser()
+config.read(args.configfile)
+
+if not config.has_section(args.section):
+    config.add_section(args.section)
+
+config.set(args.section, args.option, args.value)
+
+with open(args.configfile, 'w') as configfile:
+    config.write(configfile)

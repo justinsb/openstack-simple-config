@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+import iniparse
+import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('configfile')
+parser.add_argument('section')
+parser.add_argument('option')
+
+args = parser.parse_args()
+
+config = iniparse.ConfigParser()
+config.read(args.configfile)
+
+if not config.has_section(args.section):
+    sys.stderr.write('Section not found')
+    sys.exit(1)
+
+if not config.has_option(args.section, args.option):
+    sys.stderr.write('Option not found')
+    sys.exit(1)
+
+value = config.get(args.section, args.option)
+
+sys.stdout.write(value)
+sys.exit(0)
