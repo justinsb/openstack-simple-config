@@ -4,6 +4,26 @@ mkdir -p /var/openstack/compute
 mkdir -p /var/log/openstack
 mkdir -p /var/openstack/compute/instances
 
+cp /opt/openstack/nova/etc/nova/api-paste.ini /var/openstack/compute/
+
+# In case we later want to regenerate the compute config dynamically
+ln -s /etc/openstack/compute.conf /var/openstack/compute/
+
+SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+SERVICE_USER=`utils/openstack-config-get /etc/openstack/openstack.conf secrets compute_service_username --default nova`
+SERVICE_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets compute_service_password`
+
+utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoken" admin_tenant_name $SERVICE_TENANT_NAME
+utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoken" admin_user $SERVICE_USER
+utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoken" admin_password $SERVICE_PASSWORD
+
+export PYTHONPATH="/opt/openstack/python-novaclient/:/opt/openstack/glance/"
+
+# Create database / bring schema up to date
+pushd /opt/openstack/nova
+bin/nova-manage --conf /var/openstack/compute/compute.conf db sync 
+popd
+
 for s in openstack-compute-api openstack-compute-scheduler openstack-compute-network openstack-compute-cpu openstack-compute-console openstack-compute-novnc
 do
 	cp supervisor/${s}.conf /etc/supervisor/conf.d/

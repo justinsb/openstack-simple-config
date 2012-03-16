@@ -1,7 +1,40 @@
 #!/bin/bash
 
-mkdir -p /var/openstack/imagestore
+mkdir -p /var/openstack/imagestore/conf
 mkdir -p /var/log/openstack
+
+# TODO: Why do we need separate imagestore logging?
+mkdir -p /var/log/openstack/imagestore
+
+cp /opt/openstack/glance/etc/* /var/openstack/imagestore/conf
+# policy.json has to be in /etc/glance
+# TODO: Fix this
+mkdir -p /etc/glance
+cp /opt/openstack/glance/etc/policy.json /etc/glance/policy.json
+
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT log_file /var/log/openstack/imagestore/api.log
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT log_file /var/log/openstack/imagestore/registry.log
+
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf paste_depoy flavor keystone
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf paste_depoy flavor keystone
+
+# Modified from devstack
+function glance_config {
+    sed -e "
+        s,%SERVICE_TENANT_NAME%,$SERVICE_TENANT_NAME,g;
+        s,%SERVICE_USER%,$SERVICE_USER,g;
+        s,%SERVICE_PASSWORD%,$SERVICE_PASSWORD,g;
+    " -i $1
+}
+
+SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+SERVICE_USER=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_username --default glance`
+SERVICE_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_password`
+
+glance_config /var/openstack/imagestore/conf/glance-api.conf
+glance_config /var/openstack/imagestore/conf/glance-api-paste.ini
+glance_config /var/openstack/imagestore/conf/glance-registry.conf
+glance_config /var/openstack/imagestore/conf/glance-registry-paste.ini
 
 cp supervisor/openstack-imagestore-registry.conf /etc/supervisor/conf.d/
 supervisorctl update openstack-imagestore-registry

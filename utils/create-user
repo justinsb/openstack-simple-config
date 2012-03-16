@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Create a user, with a project/tenant of the same name, where the user is the admin of that tenant
+
+USER=$1
+TENANT=$USER
+PASS=$2
+
+export SERVICE_ENDPOINT=`utils/openstack-config-get /etc/openstack/openstack.conf identity endpoint --default http://127.0.0.1:35357/v2.0/`
+export SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
+
+keystone tenant-create --name $TENANT
+keystone user-create --name=$USER --pass=$PASS
+keystone user-role-add --user $USER --role admin --tenant_id $TENANT --byname true
+
