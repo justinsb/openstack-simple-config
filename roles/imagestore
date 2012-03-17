@@ -7,10 +7,9 @@ mkdir -p /var/log/openstack
 mkdir -p /var/log/openstack/imagestore
 
 cp /opt/openstack/glance/etc/* /var/openstack/imagestore/conf
-# policy.json has to be in /etc/glance
-# TODO: Fix this
-mkdir -p /etc/glance
-cp /opt/openstack/glance/etc/policy.json /etc/glance/policy.json
+
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT policy_file /var/openstack/imagestore/conf/policy.json
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT policy_file /var/openstack/imagestore/conf/policy.json
 
 DB_PASSWORD_IMAGESTORE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_db_password`
 DB_CONNECTION="postgresql://openstack_imagestore:${DB_PASSWORD_IMAGESTORE}@localhost/openstack_imagestore"
