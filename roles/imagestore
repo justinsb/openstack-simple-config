@@ -3,19 +3,21 @@
 mkdir -p /var/openstack/imagestore/conf
 mkdir -p /var/log/openstack
 
-# TODO: Why do we need separate imagestore logging?
-mkdir -p /var/log/openstack/imagestore
-
 cp /opt/openstack/glance/etc/* /var/openstack/imagestore/conf
 
+# Force logging to go to stdout (so we don't have two log files)
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT use_syslog False
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT log_file ""
+
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT use_syslog False
+utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT log_file ""
+
+# Repoint the policy.json file so we don't have to install it in /etc/glance
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT policy_file /var/openstack/imagestore/conf/policy.json
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT policy_file /var/openstack/imagestore/conf/policy.json
 
 DB_PASSWORD_IMAGESTORE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_db_password`
 DB_CONNECTION="postgresql://openstack_imagestore:${DB_PASSWORD_IMAGESTORE}@localhost/openstack_imagestore"
-
-utils/openstack-config-set /var/openstack/imagestore/conf/glance-api.conf DEFAULT log_file /var/log/openstack/imagestore/api.log
-utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT log_file /var/log/openstack/imagestore/registry.log
 
 utils/openstack-config-set /var/openstack/imagestore/conf/glance-registry.conf DEFAULT sql_connection $DB_CONNECTION
 
