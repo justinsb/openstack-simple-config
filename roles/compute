@@ -28,6 +28,7 @@ for s in openstack-compute-api openstack-compute-scheduler openstack-compute-net
 do
 	cp supervisor/${s}.conf /etc/supervisor/conf.d/
 	supervisorctl update ${s}
+	supervisorctl restart ${s}
 done
 
 supervisorctl status

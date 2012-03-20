@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# Heavily based on devstack
+
+WORK_DIR=/var/openstack/webui/
+WEBAPP_DIR=${WORK_DIR}/webapp
+
+APACHE_USER=openstackui
+APACHE_GROUP=openstack
+
+FILES=files/
+
+#==============================================================================
+# Packages
+apt-get install --yes apache2 libapache2-mod-wsgi python-django python-django-nose python-dateutil
+
+
+#==============================================================================
+# Unix users/groups
+
+addgroup ${APACHE_GROUP}
+#adduser --quiet  --system --no-create-home --disabled-password --ingroup ${APACHE_GROUP} ${APACHE_USER}
+adduser --quiet --home ${WORK_DIR} --system --disabled-password --ingroup ${APACHE_GROUP} ${APACHE_USER}
+
+
+#==============================================================================
+# Other projects
+
+# TODO: Any way to set the PYTHONPATH?
+pushd /opt/openstack/python-novaclient
+python setup.py develop
+popd
+
+pushd /opt/openstack/python-cloudfiles
+python setup.py develop
+popd
+
+pushd /opt/openstack/glance
+python setup.py develop
+popd
+
+
+#==============================================================================
+# Directories
+mkdir -p ${WORK_DIR}
+chown -R openstackui:openstack ${WORK_DIR}
+
+rm -f ${WEBAPP_DIR}
+ln -s /opt/openstack/horizon ${WEBAPP_DIR}
+
+
+# Link to quantum client directory.
+#rm -fr ${WEBAPP_DIR}/openstack_dashboard/quantum
+#ln -s ${QUANTUM_CLIENT_DIR}/quantum ${WEBAPP_DIR}/openstack_dashboard/quantum
+
+# Remove stale session database.
+#rm -f $WEBAPP_DIR/openstack_dashboard/local/dashboard_openstack.sqlite3
+
+# TODO: Fix this.  Bug #960656
+# TODO: Use postgres for sessions? (sqlite is probably fine, given they're only sessions)
+# ``local_settings.py`` is used to override horizon default settings.
+#local_settings=$WEBAPP_DIR/openstack_dashboard/local/local_settings.py
+#cp $FILES/horizon_settings.py $local_settings
+local_settings=$WEBAPP_DIR/openstack_dashboard/local/local_settings.py
+cp /opt/openstack/horizon/openstack_dashboard/local/local_settings.py.example $local_settings
+
+# Enable quantum in dashboard, if requested
+#if is_service_enabled quantum; then
+#    sudo sed -e "s,QUANTUM_ENABLED = False,QUANTUM_ENABLED = True,g" -i $local_settings
+#fi
+
+# TODO: Fix this
+cat >> $local_settings <<EOF
+# FIXME: We need to change this to mysql, instead of sqlite.
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(LOCAL_PATH, 'dashboard_openstack.sqlite3'),
+        'TEST_NAME': os.path.join(LOCAL_PATH, 'test.sqlite3'),
+    },
+}
+EOF
+
+# TODO: Fix this
+#cat >> $local_settings <<EOF
+#HORIZON_CONFIG = {
+#    'dashboards': ('nova', 'syspanel', 'settings',),
+#    'default_dashboard': 'nova',
+#    'user_home': 'openstack_dashboard.views.user_home',
+#}
+#EOF
+
+# TODO: Fix this
+cat >> $local_settings <<EOF
+# The default values for these two settings seem to cause issues with apache
+CACHE_BACKEND = 'dummy://'
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+EOF
+
+
+# Initialize the horizon database (it stores sessions and notices shown to
+# users).  The user system is external (keystone).
+pushd ${WEBAPP_DIR}
+python manage.py syncdb
+popd
+
+# create an empty directory that apache uses as docroot
+mkdir -p $WEBAPP_DIR/.blackhole
+
+## Configure apache's 000-default to run horizon
+cp $FILES/etc/apache2/sites-available/openstack-webui /etc/apache2/sites-available/openstack-webui
+
+
+sudo sed -e "
+    s,%USER%,$APACHE_USER,g;
+    s,%GROUP%,$APACHE_GROUP,g;
+    s,%HORIZON_DIR%,$WEBAPP_DIR,g;
+" -i /etc/apache2/sites-available/openstack-webui
+
+#TODO: Safe??
+rm /etc/apache2/sites-enabled/000-default 
+
+ln -s /etc/apache2/sites-available/openstack-webui /etc/apache2/sites-enabled
+
+/etc/init.d/apache2 reload

@@ -24,8 +24,6 @@ cp files/etc/rsyslog.d/openstack-storage.conf /etc/rsyslog.d/
 # Do we need e.g. /etc/init.d/rsyslog reload
 
 
-
-
 #==============================================================================
 # Swift Unix user/group
 

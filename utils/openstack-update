@@ -16,6 +16,9 @@ git clone https://github.com/openstack/python-novaclient.git
 git clone https://github.com/openstack/python-keystoneclient.git
 git clone https://github.com/cloudbuilders/noVNC.git
 
+# TODO: Why isn't this under github.com/openstack ??
+git clone https://github.com/rackspace/python-cloudfiles.git
+
 popd
 
 
