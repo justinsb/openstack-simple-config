@@ -1,7 +1,10 @@
 #!/bin/bash
 
+set -e 
+
+. utils/common
+
 # Load settings
-HEAD_IP=`utils/openstack-config-get /etc/openstack/openstack.conf network head_node`
 KEYSTONE_IP=${HEAD_IP}
 
 SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
@@ -12,36 +15,8 @@ SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets 
 # Dependencies
 #apt-get install --yes memcached
 
-# Directories
-mkdir -p /var/openstack/objectstore/
-mkdir -p /var/openstack/objectstore/config
+# TODO: Ensure objectstore-common
 
-mkdir -p /var/openstack/objectstore/data/
-
-#==============================================================================
-# Swift Unix user/group
-
-addgroup swift
-adduser --quiet  --system --no-create-home --disabled-password --ingroup swift swift
-
-# TODO: Should group be openstack
-# TODO: Should user be objstore ?
-chown -R swift:swift /var/openstack/objectstore/data/
-
-
-#==============================================================================
-# General config
-# TODO: /etc/swift/swift.conf is hard-coded??
-mkdir -p /etc/swift
-touch /var/openstack/objectstore/swift.conf
-ln -s /var/openstack/objectstore/swift.conf /etc/swift/
-
-SWIFT_HASH_SECRET=`utils/openstack-config-get /etc/openstack/openstack.conf secrets swift_hash_path_suffix`
-utils/openstack-config-set /var/openstack/objectstore/swift.conf "swift-hash" swift_hash_path_suffix ${SWIFT_HASH_SECRET}
-
-
-
-    
 #==============================================================================
 # Account server
 cp /opt/openstack/swift/etc/account-server.conf-sample /var/openstack/objectstore/account-server.conf

@@ -1,0 +1,6 @@
+#==============================================================================
+# Common variables etc
+
+HEAD_IP=`utils/openstack-config-get /etc/openstack/openstack.conf network head_node`
+
+MY_IP=`utils/openstack-config-get /etc/openstack/openstack.conf network my_ip`

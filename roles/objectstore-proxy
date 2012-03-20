@@ -9,9 +9,20 @@ SERVICE_USER=`utils/openstack-config-get /etc/openstack/openstack.conf secrets c
 SERVICE_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets objectstore_service_password`
 SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
 
+# TODO: Ensure objectstore-common
+
+
+#==============================================================================
+# I think we need to install swift??
+pushd /opt/openstack/swift
+python setup.py install
+popd
+
+#==============================================================================
 # Dependencies
 apt-get install --yes memcached
 
+#==============================================================================
 
 mkdir -p /var/openstack/objectstore/
 
