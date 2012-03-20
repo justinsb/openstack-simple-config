@@ -1,0 +1,83 @@
+rm test.builder
+
+echo "Creating single-node ring"
+swift-ring-builder test.builder create 8 1 1
+
+export WEIGHT=100               # relative weight (higher for bigger/faster disks)
+export DEVICE=sdb1
+
+export ZONE=1
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+swift-ring-builder test.builder  rebalance
+
+swift-ring-builder test.builder
+swift-ring-builder test.builder debug_dump
+
+
+echo "Adding second node"
+export ZONE=2
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+swift-ring-builder test.builder pretend_min_part_hours_passed
+swift-ring-builder test.builder  rebalance
+
+swift-ring-builder test.builder
+swift-ring-builder test.builder debug_dump
+
+echo "Increasing replication to 2"
+swift-ring-builder test.builder increment_replicas
+
+swift-ring-builder test.builder
+swift-ring-builder test.builder debug_dump
+
+
+echo "Adding lots more nodes"
+
+export ZONE=3
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+export ZONE=4
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+export ZONE=5
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+export ZONE=6
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+export ZONE=7
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+export ZONE=8
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+export ZONE=9
+swift-ring-builder test.builder add z$ZONE-10.0.0.${ZONE}:6002/$DEVICE $WEIGHT
+
+
+
+
+swift-ring-builder test.builder pretend_min_part_hours_passed
+swift-ring-builder test.builder  rebalance
+
+swift-ring-builder test.builder
+swift-ring-builder test.builder debug_dump
+
+
+echo "Increasing replication to 3"
+swift-ring-builder test.builder increment_replicas
+
+swift-ring-builder test.builder
+swift-ring-builder test.builder debug_dump
+
+
+echo "A rebalance is a good idea after a replication increment from 2->3"
+swift-ring-builder test.builder pretend_min_part_hours_passed
+swift-ring-builder test.builder  rebalance
+
+swift-ring-builder test.builder
+swift-ring-builder test.builder debug_dump
+
+
+

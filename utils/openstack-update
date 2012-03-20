@@ -17,3 +17,20 @@ git clone https://github.com/openstack/python-keystoneclient.git
 git clone https://github.com/cloudbuilders/noVNC.git
 
 popd
+
+
+# Python modules
+apt-get install --yes python-netaddr python-eventlet python-iso8601 python-lockfile python-webob python-crypto python-paste python-pastedeploy python-routes python-httplib2 python-sqlalchemy python-migrate python-kombu python-psycopg2 python-bcrypt python-passlib python-lxml python-boto python-libvirt python-cheetah python-prettytable python-numpy
+
+# We need some modules for utils
+apt-get install --yes python-iniparse
+
+apt-get install --yes supervisor
+
+# Virtualization support
+apt-get install --yes libvirt-bin kvm
+
+# For disk config drive. 
+apt-get install --yes dosfstools
+
+

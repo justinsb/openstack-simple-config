@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# Load settings
+HEAD_IP=`utils/openstack-config-get /etc/openstack/openstack.conf network head_node`
+KEYSTONE_IP=${HEAD_IP}
+
+SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+SERVICE_USER=`utils/openstack-config-get /etc/openstack/openstack.conf secrets compute_service_username --default swift`
+SERVICE_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets objectstore_service_password`
+SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
+
+# Dependencies
+#apt-get install --yes memcached
+
+# Directories
+mkdir -p /var/openstack/objectstore/
+mkdir -p /var/openstack/objectstore/config
+
+mkdir -p /var/openstack/objectstore/data/
+
+#==============================================================================
+# Swift Unix user/group
+
+addgroup swift
+adduser --quiet  --system --no-create-home --disabled-password --ingroup swift swift
+
+# TODO: Should group be openstack
+# TODO: Should user be objstore ?
+chown -R swift:swift /var/openstack/objectstore/data/
+
+
+#==============================================================================
+# General config
+# TODO: /etc/swift/swift.conf is hard-coded??
+mkdir -p /etc/swift
+touch /var/openstack/objectstore/swift.conf
+ln -s /var/openstack/objectstore/swift.conf /etc/swift/
+
+SWIFT_HASH_SECRET=`utils/openstack-config-get /etc/openstack/openstack.conf secrets swift_hash_path_suffix`
+utils/openstack-config-set /var/openstack/objectstore/swift.conf "swift-hash" swift_hash_path_suffix ${SWIFT_HASH_SECRET}
+
+
+
+    
+#==============================================================================
+# Account server
+cp /opt/openstack/swift/etc/account-server.conf-sample /var/openstack/objectstore/account-server.conf
+
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT workers 2
+
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT log_level DEBUG
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT log_facility LOG_LOCAL0
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT log_name swift
+
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT devices /var/openstack/objectstore/data/
+utils/openstack-config-set /var/openstack/objectstore/account-server.conf DEFAULT mount_check false
+
+
+#[DEFAULT]
+#devices = /opt/stack/swift/data/1/node
+#mount_check = false
+#bind_port = 6012
+#user = username
+#log_facility = LOG_LOCAL2
+#swift_dir = /opt/stack/swift/config
+
+#[account-replicator]
+#vm_test_mode = yes
+
+
+#==============================================================================
+# Container server
+cp /opt/openstack/swift/etc/container-server.conf-sample /var/openstack/objectstore/container-server.conf
+
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT workers 2
+
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT log_level DEBUG
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT log_facility LOG_LOCAL0
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT log_name swift
+
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT devices /var/openstack/objectstore/data/
+utils/openstack-config-set /var/openstack/objectstore/container-server.conf DEFAULT mount_check false
+
+#[DEFAULT]
+#devices = /opt/stack/swift/data/1/node
+#mount_check = false
+#bind_port = 6011
+#user = justinsb
+#log_facility = LOG_LOCAL2
+#swift_dir = /opt/stack/swift/config
+
+
+#[container-replicator]
+#vm_test_mode = yes
+
+
+#==============================================================================
+# Object server
+cp /opt/openstack/swift/etc/object-server.conf-sample /var/openstack/objectstore/object-server.conf
+
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT workers 2
+
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT log_level DEBUG
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT log_facility LOG_LOCAL0
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT log_name swift
+
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT devices /var/openstack/objectstore/data/
+utils/openstack-config-set /var/openstack/objectstore/object-server.conf DEFAULT mount_check false
+
+
+#[DEFAULT]
+#devices = /opt/stack/swift/data/1/node
+#mount_check = false
+#bind_port = 6010
+#user = justinsb
+#log_facility = LOG_LOCAL2
+#swift_dir = /opt/stack/swift/config
+
+#[object-replicator]
+#vm_test_mode = yes
+
+#==============================================================================
+# Services
+cp supervisor/openstack-objectstore-account-server.conf /etc/supervisor/conf.d/
+supervisorctl update openstack-objectstore-account-server
+supervisorctl restart openstack-objectstore-account-server
+
+cp supervisor/openstack-objectstore-container-server.conf /etc/supervisor/conf.d/
+supervisorctl update openstack-objectstore-container-server
+supervisorctl restart openstack-objectstore-container-server
+
+cp supervisor/openstack-objectstore-object-server.conf /etc/supervisor/conf.d/
+supervisorctl update openstack-objectstore-object-server
+supervisorctl restart openstack-objectstore-object-server
+
+supervisorctl status
+
+

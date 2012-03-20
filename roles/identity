@@ -1,6 +1,10 @@
 #!/bin/bash
 
-# TODO: Move to postgres?
+pushd /opt/openstack/python-keystoneclient
+# Is there a way to bypass installing the keystone client??
+python setup.py install
+popd
+
 
 mkdir -p /var/openstack/identity
 mkdir -p /var/log/openstack
@@ -20,8 +24,18 @@ cp /opt/openstack/keystone/etc/policy.json /var/openstack/identity
 
 utils/openstack-config-set /var/openstack/identity/identity.conf sql connection $DB_CONNECTION
 
-# TODO: Should we use SQL?
+# TODO: Should we use SQL for service catalog?
 cp /opt/openstack/keystone/etc/default_catalog.templates /var/openstack/identity/
+
+cat >> /var/openstack/identity/default_catalog.templates <<"EOF"
+
+catalog.RegionOne.object_store.publicURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
+catalog.RegionOne.object_store.adminURL = http://localhost:8080/
+catalog.RegionOne.object_store.internalURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
+catalog.RegionOne.object_store.name = 'Swift Service'
+
+EOF
+
 sed -i "s/localhost/${HEAD_IP}/g" /var/openstack/identity/default_catalog.templates
 
 utils/openstack-config-set /var/openstack/identity/identity.conf catalog template_file /var/openstack/identity/default_catalog.templates
@@ -38,7 +52,9 @@ popd
 
 # Start service
 cp supervisor/openstack-identity.conf /etc/supervisor/conf.d/
+supervisorctl stop openstack-identity || true
 supervisorctl update openstack-identity
+supervisorctl start openstack-identity
 
 supervisorctl status
 
@@ -47,6 +63,9 @@ export SERVICE_ENDPOINT=`utils/openstack-config-get /etc/openstack/openstack.con
 export SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
 
 SERVICE_TENANT_NAME=`utils/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+
+export PYTHONPATH=/opt/openstack/python-keystoneclient
+
 
 keystone tenant-create --name ${SERVICE_TENANT_NAME}
 

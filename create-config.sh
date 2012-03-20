@@ -1,16 +1,25 @@
 #!/bin/bash 
 
+if [[ "${HEAD_IP}" = "" ]]; then
+	echo "Must specify HEAD_IP"
+	exit 1
+fi
+
+#if [[ "$MY_IP" == "" ]]; then
+#	MY_IP=`/sbin/ifconfig ${NETWORK_INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
+#fi
+
+if [[ "${MY_IP}" = "" ]]; then
+	echo "Must specify MY_IP"
+	exit 1
+fi
+
 NETWORK=192.168.0.0
 NETWORK_SIZE=16
 NETWORK_NETMASK=255.255.0.0
-HEAD_IP=192.168.100.1
 NETWORK_INTERFACE=eth0
 NETWORK_GATEWAY=192.168.1.1
 BRIDGE_INTERFACE=br100
-
-if [[ "$MY_IP" == "" ]]; then
-	MY_IP=`/sbin/ifconfig ${NETWORK_INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
-fi
 
 echo "MY_IP=${MY_IP}"
 
