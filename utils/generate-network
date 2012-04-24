@@ -1,8 +1,22 @@
 #!/bin/bash 
 
+#====================================
+# Begin boilerplate
 set -e
 
-. utils/common
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+BASEDIR=`pwd`
+popd > /dev/null
+
+${BASEDIR}/utils/common
+
+# End boilerplate
+#====================================
 
 cat << EOF
 # This file describes the network interfaces available on your system
