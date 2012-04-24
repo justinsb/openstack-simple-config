@@ -1,8 +1,8 @@
 #!/bin/bash
 
-RABBIT_PASSWORD=`utils/openstack-config-get /etc/openstack/openstack.conf secrets rabbitmq_password`
+. utils/common
 
 apt-get install --yes rabbitmq-server
 
-sudo rabbitmqctl change_password guest ${RABBIT_PASSWORD}
+rabbitmqctl change_password guest ${RABBIT_PASSWORD}
 
