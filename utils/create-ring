@@ -49,4 +49,5 @@ ${RING_BUILDER} account.builder
 ${RING_BUILDER} container.builder
 ${RING_BUILDER} object.builder
 
+#chown swift /var/openstack/objectstore/config/*
 
