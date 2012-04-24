@@ -117,6 +117,9 @@ sudo sed -e "
     s,%HORIZON_DIR%,$WEBAPP_DIR,g;
 " -i /etc/apache2/sites-available/openstack-webui
 
+# TODO: Safe?
+chown -R openstackui:openstack /opt/openstack/horizon/openstack_dashboard/local
+
 #TODO: Safe??
 rm /etc/apache2/sites-enabled/000-default 
 
