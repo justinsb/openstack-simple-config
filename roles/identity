@@ -2,15 +2,14 @@
 
 pushd /opt/openstack/python-keystoneclient
 # Is there a way to bypass installing the keystone client??
-python setup.py install
+python setup.py develop
 popd
 
+. utils/common
 
 mkdir -p /var/openstack/identity
 mkdir -p /var/log/openstack
 
-DB_PASSWORD_IDENTITY=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_db_password`
-HEAD_IP=`utils/openstack-config-get /etc/openstack/openstack.conf network head_node`
 
 DB_CONNECTION="postgresql://openstack_identity:${DB_PASSWORD_IDENTITY}@localhost/openstack_identity"
 
@@ -25,24 +24,25 @@ cp /opt/openstack/keystone/etc/policy.json /var/openstack/identity
 utils/openstack-config-set /var/openstack/identity/identity.conf sql connection $DB_CONNECTION
 
 # TODO: Should we use SQL for service catalog?
-cp /opt/openstack/keystone/etc/default_catalog.templates /var/openstack/identity/
+utils/openstack-config-set /var/openstack/identity/identity.conf catalog driver keystone.catalog.backends.sql.Catalog
 
-cat >> /var/openstack/identity/default_catalog.templates <<"EOF"
+#cp /opt/openstack/keystone/etc/default_catalog.templates /var/openstack/identity/
 
-catalog.RegionOne.object_store.publicURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
-catalog.RegionOne.object_store.adminURL = http://localhost:8080/
-catalog.RegionOne.object_store.internalURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
-catalog.RegionOne.object_store.name = 'Swift Service'
+#cat >> /var/openstack/identity/default_catalog.templates <<"EOF"
+#
+#catalog.RegionOne.object_store.publicURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
+#catalog.RegionOne.object_store.adminURL = http://localhost:8080/
+#catalog.RegionOne.object_store.internalURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
+#catalog.RegionOne.object_store.name = 'Swift Service'
+#
+#EOF
 
-EOF
+#sed -i "s/localhost/${HEAD_IP}/g" /var/openstack/identity/default_catalog.templates
 
-sed -i "s/localhost/${HEAD_IP}/g" /var/openstack/identity/default_catalog.templates
-
-utils/openstack-config-set /var/openstack/identity/identity.conf catalog template_file /var/openstack/identity/default_catalog.templates
+#utils/openstack-config-set /var/openstack/identity/identity.conf catalog template_file /var/openstack/identity/default_catalog.templates
 
 # Set the service token
-SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
-utils/openstack-config-set /var/openstack/identity/identity.conf DEFAULT admin_token "$SERVICE_TOKEN"
+utils/openstack-config-set /var/openstack/identity/identity.conf DEFAULT admin_token "$IDENTITY_SERVICE_TOKEN"
 
 
 # Create database / bring schema up to date
