@@ -1,0 +1,53 @@
+Installing the first node
+=========================
+
+export HEAD_IP=192.168.192.1
+export NETWORK_RANGE=192.168.0.0/16
+export CLOUD_RANGE=192.168.192.0/18
+export NETWORK_INTERFACE=eth0
+export NETWORK_GATEWAY=192.168.1.1
+
+bin/cloud-initialize 
+
+bin/fetch-code
+bin/ring-create ${HEAD_IP}
+
+# Update the networking configuration of the node
+CLOUD_IP=${HEAD_IP}
+CURRENT_IP=${HEAD_IP} # Change if e.g. the machine doesn't yet have the correct IP
+
+bin/network-preview ${CLOUD_IP}
+bin/network-apply ${CLOUD_IP} ${CURRENT_IP}
+
+bin/node-update ${HEAD_IP}
+
+roles/keystone/bootstrap
+roles/compute/bootstrap
+
+# Create a user
+USER=`whoami`
+TENANT="privatecloud"
+PASS="secret"
+bin/create-user ${USER} ${TENANT} ${PASS}
+
+
+Installing additional nodes
+===========================
+
+CLOUD_IP=192.168.192.100
+
+bin/node-create ${CLOUD_IP}
+
+bin/network-preview ${CLOUD_IP}
+
+CURRENT_IP=${CLOUD_IP} # Change if the node doesn't yet have the desired IP
+bin/network-apply ${CLOUD_IP} ${CURRENT_IP}
+
+
+bin/node-role-add ${CLOUD_IP} compute
+bin/node-update ${CLOUD_IP}
+
+bin/node-role-add ${CLOUD_IP} objectstore
+bin/node-update ${CLOUD_IP}
+
+
