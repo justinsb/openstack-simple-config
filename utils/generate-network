@@ -13,7 +13,7 @@ pushd `dirname $PRG` > /dev/null
 BASEDIR=`pwd`
 popd > /dev/null
 
-${BASEDIR}/common
+. ${BASEDIR}/common
 
 # End boilerplate
 #====================================
