@@ -1,14 +1,17 @@
 #!/bin/bash
 
-DB_PASSWORD_COMPUTE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets compute_db_password`
-DB_PASSWORD_IDENTITY=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_db_password`
-DB_PASSWORD_IMAGESTORE=`utils/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_db_password`
+. utils/common
 
 apt-get install --yes postgresql-9.1 
 
 # TODO: We need to open to the private network (not just 127.0.0.1)
-# TODO: Modify main conf
-# TODO: Modify pg_hba
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/9.1/main/postgresql.conf 
+cat >> /etc/postgresql/9.1/main/pg_hba.conf <<EOF
+# Accept all IPv4 connections
+host    all         all         0.0.0.0/0             md5
+EOF
+
+/etc/init.d/postgresql restart
 
 su -c "psql -c 'CREATE DATABASE openstack_compute'" postgres
 su -c "psql -c \"CREATE USER openstack_compute WITH PASSWORD '${DB_PASSWORD_COMPUTE}'\"" postgres
