@@ -14,8 +14,13 @@ SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets 
 
 #==============================================================================
 # I think we need to install swift??
+# TODO: Can we avoid this?
 pushd /opt/openstack/swift
-python setup.py install
+python setup.py develop
+popd
+
+pushd /opt/openstack/keystone/
+python setup.py develop
 popd
 
 #==============================================================================
