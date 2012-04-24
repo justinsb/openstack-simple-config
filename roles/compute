@@ -68,6 +68,7 @@ utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoke
 
 export PYTHONPATH="/opt/openstack/python-novaclient/:/opt/openstack/glance/"
 
+# TODO: Can we get rid of this?  Why isn't PYTHONPATH working?
 pushd /opt/openstack/python-novaclient/
 python setup.py develop
 popd
@@ -75,7 +76,6 @@ popd
 # Create database / bring schema up to date
 pushd /opt/openstack/nova
 bin/nova-manage --conf /var/openstack/compute/compute.conf db sync 
-
 popd
 
 for s in openstack-compute-api openstack-compute-scheduler openstack-compute-network openstack-compute-cpu openstack-compute-console openstack-compute-novnc
