@@ -48,7 +48,6 @@ if [[ "${BRIDGE_INTERFACE}" = "" ]]; then
 	BRIDGE_INTERFACE=br100
 fi
 
-CONFDIR=${BASEDIR}/localconf/
 CLOUD_CONF_FILE=${CONFDIR}/openstack.conf
 MACHINE_CONF_FILE=${CONFDIR}/${HEAD_IP}.conf
 

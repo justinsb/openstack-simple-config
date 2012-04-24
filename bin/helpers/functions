@@ -1,6 +1,6 @@
 UTILSDIR=${BASEDIR}/bin/
 HELPERSDIR=${UTILSDIR}/helpers/
-CONFDIR=${BASEDIR}/localconf
+CONFDIR=${BASEDIR}/config
 CODEDIR=${BASEDIR}/code
 
 ROOT_USER="root"
@@ -53,7 +53,7 @@ function load_machine_config() {
 
 
 function load_local_config() {
-	CLOUD_CONF_FILE=${BASEDIR}/localconf/openstack.conf
+	CLOUD_CONF_FILE=${CONFDIR}/openstack.conf
 	load_cloud_config
 
 	local USE_IP=${TARGET_IP}
@@ -61,7 +61,7 @@ function load_local_config() {
 		USE_IP=${HEAD_IP}
 	fi
 	
-	MACHINE_CONF_FILE=${BASEDIR}/localconf/${USE_IP}.conf
+	MACHINE_CONF_FILE=${CONFDIR}/${USE_IP}.conf
 	load_machine_config
 }
 
@@ -123,7 +123,7 @@ function generate_secrets() {
 function add_role() {
 	local TARGET_IP=$1
 	local ROLE_NAME=$2
-	local MACHINE_CONF_FILE=${BASEDIR}/localconf/${TARGET_IP}.conf
+	local MACHINE_CONF_FILE=${CONFDIR}/${TARGET_IP}.conf
 
 	set_config ${MACHINE_CONF_FILE} roles ${ROLE_NAME} "yes"
 }

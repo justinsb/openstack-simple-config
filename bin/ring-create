@@ -29,8 +29,8 @@ if [[ ${REPLICAS} == "" ]]; then
 fi
 
 
-mkdir -p ${BASEDIR}/localconf/objectstore
-pushd ${BASEDIR}/localconf/objectstore
+mkdir -p ${CONFDIR}/objectstore
+pushd ${CONFDIR}/objectstore
 
 export PYTHONPATH=${BASEDIR}/code/swift
 RING_BUILDER=${BASEDIR}/code/swift/bin/swift-ring-builder
