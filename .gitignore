@@ -1,3 +1,6 @@
+# We checkout the openstack code to code/
+code/
+
 # Eclipse stuff
 .project
 .pydevproject

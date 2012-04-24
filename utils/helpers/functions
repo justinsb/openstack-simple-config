@@ -1,0 +1,100 @@
+UTILSDIR=${BASEDIR}/utils/
+HELPERSDIR=${UTILSDIR}/helpers/
+
+function get_target() {
+	TARGET_IP=$1
+	
+	if [[ "${TARGET_IP}" = "" ]]; then
+		echo "Must specify IP of target machine"
+		exit 1
+	fi
+}
+
+
+function load_cloud_config() {
+	# Per-cloud configuration
+	
+	DB_PASSWORD_IDENTITY=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets identity_db_password`
+	DB_PASSWORD_COMPUTE=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets compute_db_password`
+	DB_PASSWORD_IMAGESTORE=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets imagestore_db_password`
+	
+	IDENTITY_SERVICE_TOKEN=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets identity_service_token`
+	IDENTITY_SERVICE_ENDPOINT=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} identity endpoint --default http://127.0.0.1:35357/v2.0/`
+	
+	SERVICE_TENANT_NAME=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets service_tenant_name --default services`
+	
+	NOVA_SERVICE_USERNAME=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets compute_service_username --default nova`
+	NOVA_SERVICE_PASSWORD=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets compute_service_password`
+	
+	GLANCE_SERVICE_USERNAME=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets imagestore_service_username --default glance`
+	GLANCE_SERVICE_PASSWORD=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets imagestore_service_password`
+	
+	RABBIT_PASSWORD=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} secrets rabbitmq_password`
+	
+	HEAD_IP=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} network head_node`
+	CLOUD_RANGE=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} network cloud_range`
+	NETWORK_RANGE=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} network network_range`
+	NETWORK_GATEWAY=`${UTILSDIR}/openstack-config-get ${CLOUD_CONF_FILE} network gateway`
+	
+	NETWORK_RANGE_NETMASK=`${UTILSDIR}/openstack-netutils ${NETWORK_RANGE} netmask`
+}
+
+function load_machine_config() {
+	# Per-machine configuration
+		
+	MY_IP=`${UTILSDIR}/openstack-config-get ${MACHINE_CONF_FILE} network my_ip`
+	BRIDGE_INTERFACE=`${UTILSDIR}/openstack-config-get ${MACHINE_CONF_FILE} network bridge_interface`
+	NETWORK_INTERFACE=`${UTILSDIR}/openstack-config-get ${MACHINE_CONF_FILE} network network_interface`
+}
+
+
+function load_local_config() {
+	CLOUD_CONF_FILE=${BASEDIR}/localconf/openstack.conf
+	MACHINE_CONF_FILE=${BASEDIR}/localconf/${TARGET_IP}.conf
+	
+	load_cloud_config
+	load_machine_config
+}
+
+function load_etc_config() {
+	CLOUD_CONF_FILE=/etc/openstack/openstack.conf
+	MACHINE_CONF_FILE=/etc/openstack/machine.conf
+	
+	load_cloud_config
+	load_machine_config
+}
+
+function set_config() {
+	${UTILSDIR}/openstack-config-set $1 $2 $3 $4
+}
+
+
+function get_config() {
+	${UTILSDIR}/openstack-config-get $@
+}
+
+function git_get() {
+	local DIR=$1
+	local REPO=$2
+	local BRANCH=$3
+	
+	if [[ -d "${DIR}" ]]; then
+		pushd ${DIR}
+		git pull origin ${BRANCH}
+		popd
+	else
+		git clone -b ${BRANCH} ${REPO}
+	fi
+}
+
+
+function install_packages() {
+	PACKAGES=`cat ${BASEDIR}/roles/${1}/packages`
+	apt-get install --yes ${PACKAGES}
+}
+
+function activate_service() {
+	local SERVICE=$1
+	supervisorctl update ${s}
+	supervisorctl start ${s}
+}

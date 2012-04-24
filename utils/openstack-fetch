@@ -1,52 +1,49 @@
 #!/bin/bash
 
-GIT_BRANCH=stable/essex
 
-apt-get install --yes git
+#====================================
+# Begin boilerplate
+set -e
 
-mkdir -p /opt/openstack
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
 
-pushd /opt/openstack
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/utils/helpers/functions
+
+# End boilerplate
+#====================================
+
+if [[ ${GIT_BRANCH} = "" ]]; then
+	GIT_BRANCH=stable/essex
+fi
+
+#apt-get install --yes git
+
+pushd ${BASEDIR}
+
+mkdir -p code
+cd code
 
 # Grab the source code for anything we can lay our hands on
-git clone -b ${GIT_BRANCH} https://github.com/openstack/nova.git
-git clone -b ${GIT_BRANCH} https://github.com/openstack/glance.git
-git clone -b ${GIT_BRANCH} https://github.com/openstack/swift.git
-git clone -b ${GIT_BRANCH} https://github.com/openstack/keystone.git
-git clone -b ${GIT_BRANCH} https://github.com/openstack/horizon.git
-git clone -b ${GIT_BRANCH} https://github.com/openstack/python-novaclient.git
+git_get nova/ https://github.com/openstack/nova.git ${GIT_BRANCH}
+git_get glance/ https://github.com/openstack/glance.git ${GIT_BRANCH}
+git_get swift/ https://github.com/openstack/swift.git ${GIT_BRANCH}
+git_get keystone/ https://github.com/openstack/keystone.git ${GIT_BRANCH}
+git_get horizon/ https://github.com/openstack/horizon.git ${GIT_BRANCH}
 
 # TODO: These should be tagged with stable/essex
-git clone https://github.com/openstack/python-keystoneclient.git
-git clone https://github.com/cloudbuilders/noVNC.git
+git_get python-novaclient/ https://github.com/openstack/python-novaclient.git master
+git_get python-keystoneclient/ https://github.com/openstack/python-keystoneclient.git master
+git_get noVNC/ https://github.com/cloudbuilders/noVNC.git master
 
 # TODO: These should be under github.com/openstack ??
-git clone https://github.com/rackspace/python-cloudfiles.git
-git clone https://github.com/cloudbuilders/noVNC.git
-
-
+git_get python-cloudfiles/ https://github.com/rackspace/python-cloudfiles.git master
 
 popd
-
-
-# Python modules
-apt-get install --yes python-netaddr python-eventlet python-iso8601 python-lockfile python-webob python-crypto python-paste python-pastedeploy python-routes python-httplib2 python-sqlalchemy python-migrate python-kombu python-psycopg2 python-bcrypt python-passlib python-lxml python-boto python-libvirt python-cheetah python-prettytable python-numpy
-
-# Swift python modules (?)
-apt-get install --yes python-netifaces python-simplejson  python-xattr
-
-# sudo is needed for some compute commands
-apt-get install --yes sudo
-
-# We need some modules for utils
-apt-get install --yes python-iniparse
-
-apt-get install --yes supervisor
-
-# Virtualization support
-apt-get install --yes libvirt-bin kvm
-
-# For disk config drive. 
-apt-get install --yes dosfstools
-
-

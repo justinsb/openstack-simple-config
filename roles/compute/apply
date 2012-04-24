@@ -1,17 +1,41 @@
 #!/bin/bash
 
+#====================================
+# Begin boilerplate
 set -e
 
-. utils/common
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
 
+pushd `dirname $PRG` > /dev/null
+cd ..
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/utils/helpers/functions
+
+# End boilerplate
+#====================================
+
+
+load_etc_config
+
+install_packages common
+install_packages compute
+
+#=======================================================
 # Needed for disk injection direct into images
-# TODO: Can we just use config drive and deprecate this
+# TODO: Can we just use config drive and deprecate this?
 #apt-get install --yes guestmount
 
 # TODO: At boot?
 modprobe nbd
 apt-get install --yes kpartx
 
+#=======================================================
 
 mkdir -p /var/openstack/compute
 mkdir -p /var/log/openstack
@@ -62,27 +86,34 @@ EOF
 
 cp /opt/openstack/nova/etc/nova/api-paste.ini /var/openstack/compute/
 
-utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoken" admin_tenant_name $SERVICE_TENANT_NAME
-utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoken" admin_user $NOVA_SERVICE_USERNAME
-utils/openstack-config-set /var/openstack/compute/api-paste.ini "filter:authtoken" admin_password $NOVA_SERVICE_PASSWORD
+set_config /var/openstack/compute/api-paste.ini "filter:authtoken" admin_tenant_name $SERVICE_TENANT_NAME
+set_config /var/openstack/compute/api-paste.ini "filter:authtoken" admin_user $NOVA_SERVICE_USERNAME
+set_config /var/openstack/compute/api-paste.ini "filter:authtoken" admin_password $NOVA_SERVICE_PASSWORD
 
 export PYTHONPATH="/opt/openstack/python-novaclient/:/opt/openstack/glance/"
 
 # TODO: Can we get rid of this?  Why isn't PYTHONPATH working?
-pushd /opt/openstack/python-novaclient/
-python setup.py develop
-popd
+#pushd /opt/openstack/python-novaclient/
+#python setup.py develop
+#popd
 
 # Create database / bring schema up to date
-pushd /opt/openstack/nova
-bin/nova-manage --conf /var/openstack/compute/compute.conf db sync 
-popd
+if [[ ${HEAD_IP} == ${TARGET_IP} ]]; then
+	pushd /opt/openstack/nova
+	bin/nova-manage --conf /var/openstack/compute/compute.conf db sync 
+	popd
+fi
 
-for s in openstack-compute-api openstack-compute-scheduler openstack-compute-network openstack-compute-cpu openstack-compute-console openstack-compute-novnc
+SERVICES="openstack-compute-cpu"
+
+if [[ ${HEAD_IP} == ${TARGET_IP} ]]; then
+	SERVICES="${SERVICES} openstack-compute-api openstack-compute-scheduler openstack-compute-network openstack-compute-console openstack-compute-novnc"
+fi
+
+for s in ${SERVICES}
 do
-	cp supervisor/${s}.conf /etc/supervisor/conf.d/
-	supervisorctl update ${s}
-	supervisorctl restart ${s}
+	cp ${BASEDIR}/roles/compute/supervisor/${s}.conf /etc/supervisor/conf.d/
+	activate_service ${s}
 done
 
 supervisorctl status

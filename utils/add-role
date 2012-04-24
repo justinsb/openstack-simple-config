@@ -1,0 +1,27 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/utils/helpers/functions
+
+# End boilerplate
+#====================================
+
+get_target $1
+ROLE_NAME=$2
+
+MACHINE_CONF_FILE=${BASEDIR}/localconf/${TARGET_IP}.conf
+
+set_config ${MACHINE_CONF_FILE} roles ${ROLE_NAME} "yes"

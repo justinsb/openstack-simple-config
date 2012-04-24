@@ -10,13 +10,22 @@ while [ -h "$PRG" ] ; do
 done
 
 pushd `dirname $PRG` > /dev/null
+cd ..
 BASEDIR=`pwd`
 popd > /dev/null
 
-. ${BASEDIR}/common
+. ${BASEDIR}/utils/helpers/functions
 
 # End boilerplate
 #====================================
+
+get_target $1
+
+CLOUD_CONF_FILE=${BASEDIR}/localconf/openstack.conf
+MACHINE_CONF_FILE=${BASEDIR}/localconf/${TARGET_IP}.conf
+
+load_cloud_config
+load_machine_config
 
 cat << EOF
 # This file describes the network interfaces available on your system

@@ -1,0 +1,44 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/utils/helpers/functions
+
+# End boilerplate
+#====================================
+
+get_target $1
+
+load_local_config
+
+ROOT_USER="root"
+REMOTE_DIR=`ssh ${ROOT_USER}@${TARGET_IP} mktemp -d`
+
+rsync -arv --exclude ".git/" --exclude "code/" ${BASEDIR}/* ${ROOT_USER}@${TARGET_IP}:${REMOTE_DIR}
+rsync -arv --exclude ".git/" code/* ${ROOT_USER}@${TARGET_IP}:/opt/openstack/
+
+for ROLE in "compute" "objectstore"; do
+	IN_ROLE=$(get_config ${MACHINE_CONF_FILE} roles ${ROLE} --default "no")
+	
+	echo "In role: ${ROLE}? : ${IN_ROLE}"
+	
+	if [[ "${IN_ROLE}" == "yes" ]]; then
+		ssh ${ROOT_USER}@${TARGET_IP} ${REMOTE_DIR}/roles/${ROLE}/apply
+	fi
+done
+
+# TODO: Make sure this is safe!!
+ssh ${ROOT_USER}@${TARGET_IP} rm -rf ${REMOTE_DIR}
+

@@ -1,34 +1,19 @@
 #==============================================================================
 # Common variables etc
 
-UTILSDIR=${BASEDIR}/../utils/
+UTILSDIR=${BASEDIR}/utils/
+HELPERSDIR=${UTILSDIR}/helpers/
 
-DB_PASSWORD_IDENTITY=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets identity_db_password`
-DB_PASSWORD_COMPUTE=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets compute_db_password`
-DB_PASSWORD_IMAGESTORE=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_db_password`
+if [[ "${CLOUD_CONF_FILE}" = "" ]]; then
+	CLOUD_CONF_FILE=/etc/openstack/openstack.conf
+fi
 
-IDENTITY_SERVICE_TOKEN=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
-IDENTITY_SERVICE_ENDPOINT=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf identity endpoint --default http://127.0.0.1:35357/v2.0/`
+if [[ "${MACHINE_CONF_FILE}" = "" ]]; then
+	MACHINE_CONF_FILE=/etc/openstack/machine.conf
+fi
 
-SERVICE_TENANT_NAME=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets service_tenant_name --default services`
-
-NOVA_SERVICE_USERNAME=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets compute_service_username --default nova`
-NOVA_SERVICE_PASSWORD=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets compute_service_password`
-
-GLANCE_SERVICE_USERNAME=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_username --default glance`
-GLANCE_SERVICE_PASSWORD=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets imagestore_service_password`
-
-RABBIT_PASSWORD=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf secrets rabbitmq_password`
-
-HEAD_IP=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf network head_node`
-CLOUD_RANGE=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf network cloud_range`
-NETWORK_RANGE=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf network network_range`
-NETWORK_GATEWAY=`${UTILSDIR}/openstack-config-get /etc/openstack/openstack.conf network gateway`
-
-MY_IP=`${UTILSDIR}/openstack-config-get /etc/openstack/machine.conf network my_ip`
-BRIDGE_INTERFACE=`${UTILSDIR}/openstack-config-get /etc/openstack/machine.conf network bridge_interface`
-NETWORK_INTERFACE=`${UTILSDIR}/openstack-config-get /etc/openstack/machine.conf network network_interface`
-
-NETWORK_RANGE_NETMASK=`${UTILSDIR}/openstack-netutils ${NETWORK_RANGE} netmask`
+. ${HELPERSDIR}/functions
 
 
+load_cloud_config
+load_machine_config
