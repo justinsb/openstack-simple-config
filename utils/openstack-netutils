@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+import argparse
+import netaddr
+import random
+import string
+import sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument('cidr')
+parser.add_argument('action')
+
+args = parser.parse_args()
+
+cidr = netaddr.IPNetwork(args.cidr)
+action = args.action
+
+if action == 'netmask':
+    value = cidr.netmask
+elif action == 'count':
+    value = 1 + cidr.last - cidr.first
+else:
+    sys.stderr.write('Value not found')
+    sys.exit(1)
+
+sys.stdout.write("%s" % value)
+sys.exit(0)

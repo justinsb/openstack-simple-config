@@ -1,15 +1,33 @@
-#!/bin/bash
+#!/bin/bash 
+
+set -e
+
+. utils/common
 
 # Create a user, with a project/tenant of the same name, where the user is the admin of that tenant
 
 USER=$1
-TENANT=$USER
-PASS=$2
+TENANT=$2
+PASS=$3
 
-export SERVICE_ENDPOINT=`utils/openstack-config-get /etc/openstack/openstack.conf identity endpoint --default http://127.0.0.1:35357/v2.0/`
-export SERVICE_TOKEN=`utils/openstack-config-get /etc/openstack/openstack.conf secrets identity_service_token`
+export SERVICE_ENDPOINT=${IDENTITY_SERVICE_ENDPOINT}
+export SERVICE_TOKEN=${IDENTITY_SERVICE_TOKEN}
 
-keystone tenant-create --name $TENANT
-keystone user-create --name=$USER --pass=$PASS
-keystone user-role-add --user $USER --role admin --tenant_id $TENANT --byname true
+# TODO: These need to work using names, not just uuids
+#keystone tenant-create --name $TENANT
+#keystone user-create --name=$USER --pass=$PASS
+#keystone user-role-add --user $USER --role admin --tenant_id $TENANT --byname true
+
+function get_id() {
+	keystone $1-list | grep $2 |  awk ' { print $2 }'
+}
+
+keystone tenant-create --name ${TENANT}
+keystone user-create --name=${USER} --pass=${PASS}
+
+TENANT_ID=$(get_id tenant ${TENANT})
+USER_ID=$(get_id user ${USER})
+ROLE_ID=$(get_id role admin)
+
+keystone user-role-add --user ${USER_ID} --role ${ROLE_ID} --tenant_id ${TENANT_ID}
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+GIT_BRANCH=stable/essex
+
 apt-get install --yes git
 
 mkdir -p /opt/openstack
@@ -7,17 +9,22 @@ mkdir -p /opt/openstack
 pushd /opt/openstack
 
 # Grab the source code for anything we can lay our hands on
-git clone https://github.com/openstack/nova.git
-git clone https://github.com/openstack/glance.git
-git clone https://github.com/openstack/swift.git
-git clone https://github.com/openstack/keystone.git
-git clone https://github.com/openstack/horizon.git
-git clone https://github.com/openstack/python-novaclient.git
+git clone -b ${GIT_BRANCH} https://github.com/openstack/nova.git
+git clone -b ${GIT_BRANCH} https://github.com/openstack/glance.git
+git clone -b ${GIT_BRANCH} https://github.com/openstack/swift.git
+git clone -b ${GIT_BRANCH} https://github.com/openstack/keystone.git
+git clone -b ${GIT_BRANCH} https://github.com/openstack/horizon.git
+git clone -b ${GIT_BRANCH} https://github.com/openstack/python-novaclient.git
+
+# TODO: These should be tagged with stable/essex
 git clone https://github.com/openstack/python-keystoneclient.git
 git clone https://github.com/cloudbuilders/noVNC.git
 
-# TODO: Why isn't this under github.com/openstack ??
+# TODO: These should be under github.com/openstack ??
 git clone https://github.com/rackspace/python-cloudfiles.git
+git clone https://github.com/cloudbuilders/noVNC.git
+
+
 
 popd
 
@@ -26,8 +33,10 @@ popd
 apt-get install --yes python-netaddr python-eventlet python-iso8601 python-lockfile python-webob python-crypto python-paste python-pastedeploy python-routes python-httplib2 python-sqlalchemy python-migrate python-kombu python-psycopg2 python-bcrypt python-passlib python-lxml python-boto python-libvirt python-cheetah python-prettytable python-numpy
 
 # Swift python modules (?)
-apt-get install python-netifaces python-simplejson  python-xattr
+apt-get install --yes python-netifaces python-simplejson  python-xattr
 
+# sudo is needed for some compute commands
+apt-get install --yes sudo
 
 # We need some modules for utils
 apt-get install --yes python-iniparse
