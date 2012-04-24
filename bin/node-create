@@ -1,0 +1,55 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+get_target $1
+
+CLOUD_CONF_FILE=${CONFDIR}/openstack.conf
+
+load_cloud_config
+
+if [[ "${HEAD_IP}" = "" ]]; then
+	echo "Must specify HEAD_IP"
+	exit 1
+fi
+
+HEAD_CONF_FILE=${CONFDIR}/${HEAD_IP}.conf
+MACHINE_CONF_FILE=${CONFDIR}/${TARGET_IP}.conf
+
+DEFAULT_CONF_FILE=${HEAD_CONF_FILE}
+
+if [[ -e ${MACHINE_CONF_FILE} ]]; then
+	DEFAULT_CONF_FILE=${MACHINE_CONF_FILE}
+fi
+
+if [[ "${BRIDGE_INTERFACE}" = "" ]]; then
+	# Assume same bridge
+	BRIDGE_INTERFACE=`get_config ${DEFAULT_CONF_FILE} network bridge_interface`
+fi
+
+if [[ "${NETWORK_INTERFACE}" = "" ]]; then
+	# Assume same interface
+	NETWORK_INTERFACE=`get_config ${DEFAULT_CONF_FILE} network network_interface`
+fi
+
+set_config ${MACHINE_CONF_FILE} network bridge_interface ${BRIDGE_INTERFACE}
+set_config ${MACHINE_CONF_FILE} network my_ip ${TARGET_IP}
+set_config ${MACHINE_CONF_FILE} network network_interface ${NETWORK_INTERFACE}
+

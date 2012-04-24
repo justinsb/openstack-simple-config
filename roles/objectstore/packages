@@ -1,0 +1,9 @@
+memcached
+python-netifaces
+python-simplejson 
+python-xattr
+
+
+python-greenlet
+gcc
+python-dev

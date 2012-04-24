@@ -1,0 +1,30 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+get_target $1
+ROLE_NAME=$2
+
+if [[ "${ROLE_NAME}" = "" ]]; then
+	echo "Must specify ROLE_NAME"
+	exit 1
+fi
+
+add_role ${TARGET_IP} ${ROLE_NAME}

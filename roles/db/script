@@ -1,0 +1,64 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+ROLEDIR=${BASEDIR}/roles/db/
+
+load_etc_config
+
+install_packages common
+install_packages db
+
+
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/9.1/main/postgresql.conf 
+
+if grep --files-without-match OPENSTACK-ALLOW /etc/postgresql/9.1/main/pg_hba.conf; then
+
+cat >> /etc/postgresql/9.1/main/pg_hba.conf <<EOF
+# Accept all IPv4 connections
+host    all         all         0.0.0.0/0             md5  # {OPENSTACK-ALLOW}
+EOF
+
+/etc/init.d/postgresql restart
+
+fi
+
+
+DATABASES=`su -c "psql -c 'SELECT datname FROM pg_database;'" postgres`
+echo DATABASES=${DATABASES}
+
+if [[ "$DATABASES" != *openstack_compute* ]]; then
+	su -c "psql -c 'CREATE DATABASE openstack_compute'" postgres
+	su -c "psql -c \"CREATE USER openstack_compute WITH PASSWORD '${DB_PASSWORD_COMPUTE}'\"" postgres
+	su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_compute TO openstack_compute'" postgres
+fi
+
+if [[ "$DATABASES" != *openstack_imagestore* ]]; then
+	su -c "psql -c 'CREATE DATABASE openstack_imagestore'" postgres
+	su -c "psql -c \"CREATE USER openstack_imagestore WITH PASSWORD '${DB_PASSWORD_IMAGESTORE}'\"" postgres
+	su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_imagestore TO openstack_imagestore'" postgres
+fi
+
+if [[ "$DATABASES" != *openstack_identity* ]]; then
+	su -c "psql -c 'CREATE DATABASE openstack_identity'" postgres
+	su -c "psql -c \"CREATE USER openstack_identity WITH PASSWORD '${DB_PASSWORD_IDENTITY}'\"" postgres
+	su -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE openstack_identity TO openstack_identity'" postgres
+fi

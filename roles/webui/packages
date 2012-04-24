@@ -1,0 +1,5 @@
+apache2
+libapache2-mod-wsgi
+python-django
+python-django-nose
+python-dateutil

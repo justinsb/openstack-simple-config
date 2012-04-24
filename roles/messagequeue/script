@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+ROLEDIR=${BASEDIR}/roles/messagequeue/
+
+load_etc_config
+
+install_packages common
+install_packages messagequeue
+
+rabbitmqctl change_password guest ${RABBIT_PASSWORD}
+

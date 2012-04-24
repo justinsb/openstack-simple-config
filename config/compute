@@ -4,8 +4,8 @@ set -e
 
 . utils/common
 
-CLOUD_RANGE_COUNT=`utils/openstack-netutils ${CLOUD_RANGE} count`
-NETWORK_RANGE_COUNT=`utils/openstack-netutils ${NETWORK_RANGE} count`
+CLOUD_RANGE_COUNT=`${HELPERSDIR}/openstack-netutils ${CLOUD_RANGE} count`
+NETWORK_RANGE_COUNT=`${HELPERSDIR}/openstack-netutils ${NETWORK_RANGE} count`
 
 pushd /opt/openstack/nova
 bin/nova-manage --config=/var/openstack/compute/compute.conf network create private ${NETWORK_RANGE} 1 ${NETWORK_RANGE_COUNT} --fixed_cidr=${CLOUD_RANGE} --gateway=${NETWORK_GATEWAY}

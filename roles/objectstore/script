@@ -1,0 +1,263 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+ROLEDIR=${BASEDIR}/roles/objectstore/
+
+load_etc_config
+
+install_packages common
+install_packages objectstore
+
+function config_objectstore_common() {
+	# Load settings
+	KEYSTONE_IP=${HEAD_IP}
+	
+	SWIFT_HASH_SECRET=`get_config /etc/openstack/openstack.conf secrets swift_hash_path_suffix`
+	
+	#==============================================================================
+	# Directories
+	mkdir -p /var/openstack/objectstore/
+	mkdir -p /var/openstack/objectstore/config
+	mkdir -p /var/openstack/objectstore/data/
+	
+	
+	# TODO: Is there any way to just log to a file??
+	#==============================================================================
+	# Syslog
+	cp ${ROLEDIR}/files/etc/rsyslog.d/openstack-storage.conf /etc/rsyslog.d/
+	# Do we need e.g. /etc/init.d/rsyslog reload
+	
+	
+	#==============================================================================
+	# Swift Unix user/group
+	
+	ensure_group swift
+	adduser --quiet  --system --no-create-home --disabled-password --ingroup swift swift
+	
+	# TODO: Should group be openstack
+	# TODO: Should user be objstore ?
+	chown -R swift:swift /var/openstack/objectstore/data/
+	
+	#==============================================================================
+	# General config
+	# TODO: /etc/swift/swift.conf is hard-coded??
+	mkdir -p /etc/swift
+	touch /var/openstack/objectstore/swift.conf
+	ensure_symlink /var/openstack/objectstore/swift.conf /etc/swift/swift.conf
+	
+	set_config /var/openstack/objectstore/swift.conf "swift-hash" swift_hash_path_suffix ${SWIFT_HASH_SECRET}
+}
+
+function config_objectstore_data() {
+	# Load settings
+	KEYSTONE_IP=${HEAD_IP}
+	
+	SERVICE_TENANT_NAME=`get_config /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+	SERVICE_USER=`get_config /etc/openstack/openstack.conf secrets compute_service_username --default swift`
+	SERVICE_PASSWORD=`get_config /etc/openstack/openstack.conf secrets objectstore_service_password`
+	SERVICE_TOKEN=`get_config /etc/openstack/openstack.conf secrets identity_service_token`
+	
+	# TODO: Ensure objectstore-common
+	
+	#==============================================================================
+	# Account server
+	cp /opt/openstack/swift/etc/account-server.conf-sample /var/openstack/objectstore/account-server.conf
+	
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT workers 2
+	
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT log_level DEBUG
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT log_facility LOG_LOCAL0
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT log_name swift
+	
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT devices /var/openstack/objectstore/data/
+	set_config /var/openstack/objectstore/account-server.conf DEFAULT mount_check false
+	
+	
+	#[DEFAULT]
+	#devices = /opt/stack/swift/data/1/node
+	#mount_check = false
+	#bind_port = 6012
+	#user = username
+	#log_facility = LOG_LOCAL2
+	#swift_dir = /opt/stack/swift/config
+	
+	#[account-replicator]
+	#vm_test_mode = yes
+	
+	
+	#==============================================================================
+	# Container server
+	cp /opt/openstack/swift/etc/container-server.conf-sample /var/openstack/objectstore/container-server.conf
+	
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT workers 2
+	
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT log_level DEBUG
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT log_facility LOG_LOCAL0
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT log_name swift
+	
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT devices /var/openstack/objectstore/data/
+	set_config /var/openstack/objectstore/container-server.conf DEFAULT mount_check false
+	
+	#[DEFAULT]
+	#devices = /opt/stack/swift/data/1/node
+	#mount_check = false
+	#bind_port = 6011
+	#user = justinsb
+	#log_facility = LOG_LOCAL2
+	#swift_dir = /opt/stack/swift/config
+	
+	
+	#[container-replicator]
+	#vm_test_mode = yes
+	
+	
+	#==============================================================================
+	# Object server
+	cp /opt/openstack/swift/etc/object-server.conf-sample /var/openstack/objectstore/object-server.conf
+	
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT workers 2
+	
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT log_level DEBUG
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT log_facility LOG_LOCAL0
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT log_name swift
+	
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT devices /var/openstack/objectstore/data/
+	set_config /var/openstack/objectstore/object-server.conf DEFAULT mount_check false
+	
+	
+	#[DEFAULT]
+	#devices = /opt/stack/swift/data/1/node
+	#mount_check = false
+	#bind_port = 6010
+	#user = justinsb
+	#log_facility = LOG_LOCAL2
+	#swift_dir = /opt/stack/swift/config
+	
+	#[object-replicator]
+	#vm_test_mode = yes
+	
+	#==============================================================================
+	# Services
+	SERVICES="openstack-objectstore-account-server openstack-objectstore-container-server openstack-objectstore-object-server"
+
+	for s in ${SERVICES}
+	do
+		cp ${ROLEDIR}/supervisor/${s}.conf /etc/supervisor/conf.d/
+		activate_service ${s}
+	done
+	
+	supervisorctl status
+}
+
+function config_objectstore_proxy() {
+	# Load settings
+	HEAD_IP=`get_config /etc/openstack/openstack.conf network head_node`
+	KEYSTONE_IP=${HEAD_IP}
+	
+	SERVICE_TENANT_NAME=`get_config /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+	SERVICE_USER=`get_config /etc/openstack/openstack.conf secrets compute_service_username --default swift`
+	SERVICE_PASSWORD=`get_config /etc/openstack/openstack.conf secrets objectstore_service_password`
+	SERVICE_TOKEN=`get_config /etc/openstack/openstack.conf secrets identity_service_token`
+	
+	# TODO: Ensure objectstore-common
+	
+	#==============================================================================
+	# I think we need to install swift??
+	# TODO: Can we avoid this?
+	pushd /opt/openstack/swift
+	python setup.py develop
+	popd
+	
+	pushd /opt/openstack/keystone/
+	python setup.py develop
+	popd
+	
+	#==============================================================================
+	
+	mkdir -p /var/openstack/objectstore/
+	
+	cp /opt/openstack/swift/etc/proxy-server.conf-sample /var/openstack/objectstore/proxy-server.conf
+	
+	# SSL?
+	#set_config /var/openstack/objectstore/proxy-server.conf DEFAULT cert_file /etc/swift/cert.crt
+	#set_config /var/openstack/objectstore/proxy-server.conf DEFAULT key_file /etc/swift/cert.key
+	
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT swift_dir /var/openstack/objectstore/config
+	
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT bind_port 8080
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT workers 8
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT user swift
+	
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT log_level DEBUG
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT log_facility LOG_LOCAL0
+	set_config /var/openstack/objectstore/proxy-server.conf DEFAULT log_name swift
+	
+	
+	
+	# Use keystone auth
+	set_config /var/openstack/objectstore/proxy-server.conf "pipeline:main" pipeline "catch_errors healthcheck cache ratelimit s3token tokenauth keystone proxy-server"
+	
+	# ???
+	set_config /var/openstack/objectstore/proxy-server.conf "app:proxy-server" allow_account_management true
+	set_config /var/openstack/objectstore/proxy-server.conf "app:proxy-server" account_autocreate true
+	
+	# filter:keystone
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:keystone" "paste.filter_factory" "keystone.middleware.swift_auth:filter_factory"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:keystone" "operator_roles"  "Member,admin"
+	
+	# filter:s3token
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:s3token" "paste.filter_factory"  "keystone.middleware.s3_token:filter_factory"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:s3token" "auth_host"  ${KEYSTONE_IP}
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:s3token" "auth_port"  "35357"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:s3token" "auth_protocol"  "http"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:s3token" "admin_token"  "${SERVICE_TOKEN}"
+	
+	# filter:tokenauth
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "paste.filter_factory"  "keystone.middleware.auth_token:filter_factory"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "cache"  "swift.cache"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "auth_host"  ${KEYSTONE_IP}
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "auth_port"  "35357"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "auth_protocol"  "http"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "admin_tenant_name"  "${SERVICE_TENANT_NAME}"
+	#set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "admin_user"  "${SERVICE_USER}"
+	#set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "admin_password"  "${SERVICE_PASSWORD}"
+	set_config /var/openstack/objectstore/proxy-server.conf "filter:tokenauth" "admin_token"  "${SERVICE_TOKEN}"
+	
+	
+	# Services
+	SERVICES="openstack-objectstore-proxy"
+
+	for s in ${SERVICES}
+	do
+		cp ${ROLEDIR}/supervisor/${s}.conf /etc/supervisor/conf.d/
+		activate_service ${s}
+	done
+	
+	supervisorctl status
+}
+
+config_objectstore_common
+config_objectstore_data
+config_objectstore_proxy

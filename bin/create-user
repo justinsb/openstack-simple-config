@@ -1,0 +1,64 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+load_local_config
+
+# Create a user, with a project/tenant of the same name, where the user is the admin of that tenant
+
+USER=$1
+TENANT=$2
+PASS=$3
+
+if [[ ${USER} == "" || ${TENANT} == "" || ${PASS} == "" ]]; then
+	echo "Syntax: <user> <tenant> <password>"
+	exit 1
+fi
+
+export SERVICE_ENDPOINT=${IDENTITY_SERVICE_ENDPOINT}
+export SERVICE_TOKEN=${IDENTITY_SERVICE_TOKEN}
+
+# TODO: These need to work using names, not just uuids
+#keystone tenant-create --name $TENANT
+#keystone user-create --name=$USER --pass=$PASS
+#keystone user-role-add --user $USER --role admin --tenant_id $TENANT --byname true
+
+
+function keystone_shell() {
+	export PYTHONPATH=${CODEDIR}/python-keystoneclient
+	python -c "import keystoneclient.shell; keystoneclient.shell.main()" $@
+}
+
+function get_keystone_id() {
+	keystone_shell $1-list | grep $2 |  awk ' { print $2 }'
+}
+
+TENANT_ID=$(get_keystone_id tenant ${TENANT})
+if [[ ${TENANT_ID} == "" ]]; then
+	keystone_shell tenant-create --name ${TENANT}
+	TENANT_ID=$(get_keystone_id tenant ${TENANT})
+fi
+
+keystone_shell user-create --name=${USER} --pass=${PASS}
+
+USER_ID=$(get_keystone_id user ${USER})
+ROLE_ID=$(get_keystone_id role admin)
+
+keystone_shell user-role-add --user ${USER_ID} --role ${ROLE_ID} --tenant_id ${TENANT_ID}

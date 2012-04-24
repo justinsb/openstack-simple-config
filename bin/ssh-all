@@ -1,0 +1,28 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+for f in ${CONFDIR}/*.conf; do
+	f=$(basename $f)
+	f=${f%.*}
+	if [[ "$f" != "openstack" ]]; then
+		ssh ${ROOT_USER}@${f} $@
+	fi
+done

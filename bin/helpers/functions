@@ -1,0 +1,167 @@
+UTILSDIR=${BASEDIR}/bin/
+HELPERSDIR=${UTILSDIR}/helpers/
+CONFDIR=${BASEDIR}/localconf
+CODEDIR=${BASEDIR}/code
+
+ROOT_USER="root"
+
+function get_target() {
+	TARGET_IP=$1
+	
+	if [[ "${TARGET_IP}" = "" ]]; then
+		echo "Must specify IP of target machine"
+		exit 1
+	fi
+}
+
+function load_cloud_config() {
+	# Per-cloud configuration
+	
+	HEAD_IP=`get_config ${CLOUD_CONF_FILE} network head_node`
+
+	DB_PASSWORD_IDENTITY=`get_config ${CLOUD_CONF_FILE} secrets identity_db_password`
+	DB_PASSWORD_COMPUTE=`get_config ${CLOUD_CONF_FILE} secrets compute_db_password`
+	DB_PASSWORD_IMAGESTORE=`get_config ${CLOUD_CONF_FILE} secrets imagestore_db_password`
+	
+	IDENTITY_SERVICE_TOKEN=`get_config ${CLOUD_CONF_FILE} secrets identity_service_token`
+	IDENTITY_SERVICE_ENDPOINT=`get_config ${CLOUD_CONF_FILE} identity endpoint --default http://${HEAD_IP}:35357/v2.0/`
+	
+	SERVICE_TENANT_NAME=`get_config ${CLOUD_CONF_FILE} secrets service_tenant_name --default services`
+	
+	NOVA_SERVICE_USERNAME=`get_config ${CLOUD_CONF_FILE} secrets compute_service_username --default nova`
+	NOVA_SERVICE_PASSWORD=`get_config ${CLOUD_CONF_FILE} secrets compute_service_password`
+	
+	GLANCE_SERVICE_USERNAME=`get_config ${CLOUD_CONF_FILE} secrets imagestore_service_username --default glance`
+	GLANCE_SERVICE_PASSWORD=`get_config ${CLOUD_CONF_FILE} secrets imagestore_service_password`
+	
+	RABBIT_PASSWORD=`get_config ${CLOUD_CONF_FILE} secrets rabbitmq_password`
+	
+	CLOUD_RANGE=`get_config ${CLOUD_CONF_FILE} network cloud_range`
+	NETWORK_RANGE=`get_config ${CLOUD_CONF_FILE} network network_range`
+	NETWORK_GATEWAY=`get_config ${CLOUD_CONF_FILE} network gateway`
+	
+	NETWORK_RANGE_NETMASK=`${HELPERSDIR}/openstack-netutils ${NETWORK_RANGE} netmask`
+}
+
+function load_machine_config() {
+	# Per-machine configuration
+		
+	MY_IP=`get_config ${MACHINE_CONF_FILE} network my_ip`
+	BRIDGE_INTERFACE=`get_config ${MACHINE_CONF_FILE} network bridge_interface`
+	NETWORK_INTERFACE=`get_config ${MACHINE_CONF_FILE} network network_interface`
+}
+
+
+function load_local_config() {
+	CLOUD_CONF_FILE=${BASEDIR}/localconf/openstack.conf
+	load_cloud_config
+
+	local USE_IP=${TARGET_IP}
+	if [[ "${USE_IP}" == "" ]]; then
+		USE_IP=${HEAD_IP}
+	fi
+	
+	MACHINE_CONF_FILE=${BASEDIR}/localconf/${USE_IP}.conf
+	load_machine_config
+}
+
+function load_etc_config() {
+	CLOUD_CONF_FILE=/etc/openstack/openstack.conf
+	MACHINE_CONF_FILE=/etc/openstack/machine.conf
+	
+	load_cloud_config
+	load_machine_config
+}
+
+function set_config() {
+	${HELPERSDIR}/openstack-config-set "$1" "$2" "$3" "$4"
+}
+
+function get_config() {
+	${HELPERSDIR}/openstack-config-get $@
+}
+
+function git_get() {
+	local DIR=$1
+	local REPO=$2
+	local BRANCH=$3
+	
+	if [[ -d "${DIR}" ]]; then
+		pushd ${DIR}
+		git pull origin ${BRANCH}
+		popd
+	else
+		git clone -b ${BRANCH} ${REPO}
+	fi
+}
+
+
+function install_packages() {
+	PACKAGES=`cat ${BASEDIR}/roles/${1}/packages`
+	apt-get install --yes ${PACKAGES}
+}
+
+function activate_service() {
+	local SERVICE=$1
+	supervisorctl update ${s}
+	supervisorctl start ${s}
+}
+
+function generate_secrets() {
+	# Create general config file, with auto-generated secrets
+	# This is idempotent (we won't overwrite existsing passwords)
+	local FILE=$1
+		
+	touch ${FILE}
+	
+	for k in swift_hash_path_suffix imagestore_db_password compute_db_password identity_db_password rabbitmq_password identity_service_token compute_service_password imagestore_service_password objectstore_service_password
+	do
+		get_config --create ${FILE} secrets ${k} > /dev/null
+	done
+}
+
+function add_role() {
+	local TARGET_IP=$1
+	local ROLE_NAME=$2
+	local MACHINE_CONF_FILE=${BASEDIR}/localconf/${TARGET_IP}.conf
+
+	set_config ${MACHINE_CONF_FILE} roles ${ROLE_NAME} "yes"
+}
+
+
+function ensure_group() {
+	local GROUP=$1
+	grep ${GROUP} /etc/group || addgroup ${GROUP}
+}
+
+function ensure_symlink() {
+	local SRC=$1
+	local DEST=$2
+	
+	[[ -e ${DEST} ]] || ln -s ${SRC} ${DEST}
+}
+
+
+function build_network_config() {
+
+cat << EOF
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto ${BRIDGE_INTERFACE}
+iface ${BRIDGE_INTERFACE} inet static
+        bridge_ports ${NETWORK_INTERFACE}
+        bridge_stp off
+        bridge_maxwait 0
+        bridge_fd 0
+        address ${TARGET_IP}
+        netmask ${NETWORK_RANGE_NETMASK}
+        gateway ${NETWORK_GATEWAY}
+EOF
+
+}

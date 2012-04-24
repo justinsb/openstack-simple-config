@@ -1,0 +1,48 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+if [[ ${GIT_BRANCH} = "" ]]; then
+	GIT_BRANCH=stable/essex
+fi
+
+#apt-get install --yes git
+
+pushd ${BASEDIR}
+
+mkdir -p code
+cd code
+
+# Grab the source code for anything we can lay our hands on
+git_get nova/ https://github.com/openstack/nova.git ${GIT_BRANCH}
+git_get glance/ https://github.com/openstack/glance.git ${GIT_BRANCH}
+git_get swift/ https://github.com/openstack/swift.git ${GIT_BRANCH}
+git_get keystone/ https://github.com/openstack/keystone.git ${GIT_BRANCH}
+git_get horizon/ https://github.com/openstack/horizon.git ${GIT_BRANCH}
+
+# TODO: These should be tagged with stable/essex
+git_get python-novaclient/ https://github.com/openstack/python-novaclient.git master
+git_get python-keystoneclient/ https://github.com/openstack/python-keystoneclient.git master
+git_get noVNC/ https://github.com/cloudbuilders/noVNC.git master
+
+# TODO: These should be under github.com/openstack ??
+git_get python-cloudfiles/ https://github.com/rackspace/python-cloudfiles.git master
+
+popd

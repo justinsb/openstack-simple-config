@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+ROLEDIR=${BASEDIR}/roles/identity/
+
+load_etc_config
+
+install_packages common
+install_packages identity
+
+pushd /opt/openstack/python-keystoneclient
+# Is there a way to bypass installing the keystone client??
+python setup.py develop
+popd
+
+mkdir -p /var/openstack/identity
+mkdir -p /var/log/openstack
+
+DB_CONNECTION="postgresql://openstack_identity:${DB_PASSWORD_IDENTITY}@localhost/openstack_identity"
+
+cp /opt/openstack/keystone/etc/keystone.conf /var/openstack/identity/identity.conf
+
+# TODO: Config file argument is ignored :-( :-( :-(
+rm /opt/openstack/keystone/etc/keystone.conf
+ln -s /var/openstack/identity/identity.conf /opt/openstack/keystone/etc/keystone.conf
+
+cp /opt/openstack/keystone/etc/policy.json /var/openstack/identity
+
+set_config /var/openstack/identity/identity.conf sql connection $DB_CONNECTION
+
+# TODO: Should we use SQL for service catalog?
+set_config /var/openstack/identity/identity.conf catalog driver keystone.catalog.backends.sql.Catalog
+
+#cp /opt/openstack/keystone/etc/default_catalog.templates /var/openstack/identity/
+
+#cat >> /var/openstack/identity/default_catalog.templates <<"EOF"
+#
+#catalog.RegionOne.object_store.publicURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
+#catalog.RegionOne.object_store.adminURL = http://localhost:8080/
+#catalog.RegionOne.object_store.internalURL = http://localhost:8080/v1/AUTH_$(tenant_id)s
+#catalog.RegionOne.object_store.name = 'Swift Service'
+#
+#EOF
+
+#sed -i "s/localhost/${HEAD_IP}/g" /var/openstack/identity/default_catalog.templates
+
+#set_config /var/openstack/identity/identity.conf catalog template_file /var/openstack/identity/default_catalog.templates
+
+# Set the service token
+set_config /var/openstack/identity/identity.conf DEFAULT admin_token "$IDENTITY_SERVICE_TOKEN"
+
+
+# Create database / bring schema up to date
+pushd /opt/openstack/keystone
+bin/keystone-manage --conf /var/openstack/identity/identity.conf db_sync
+popd
+
+# Start service
+SERVICES="openstack-identity"
+
+for s in ${SERVICES}
+do
+	cp ${ROLEDIR}/supervisor/${s}.conf /etc/supervisor/conf.d/
+	activate_service ${s}
+done
+
+supervisorctl status
+

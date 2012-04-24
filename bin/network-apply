@@ -1,0 +1,40 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+get_target $1
+
+load_local_config
+
+if [[ "${CURRENT_IP}" == "" ]]; then
+	echo "CURRENT_IP must be set"
+	exit 1
+fi
+
+build_network_config
+
+ssh ${ROOT_USER}@${CURRENT_IP} apt-get install --yes bridge-utils
+build_network_config | ssh ${ROOT_USER}@${CURRENT_IP} "cat > /etc/network/interfaces"
+ssh ${ROOT_USER}@${CURRENT_IP} "/etc/init.d/networking restart"
+
+#CURRENT_IP=${CLOUD_IP}
+
+
+

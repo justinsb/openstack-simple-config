@@ -1,0 +1,77 @@
+#!/bin/bash 
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+if [[ "${HEAD_IP}" = "" ]]; then
+	echo "Must specify HEAD_IP"
+	exit 1
+fi
+
+if [[ "${NETWORK_RANGE}" = "" ]]; then
+	echo "Must specify NETWORK_RANGE"
+	exit 1
+fi
+
+if [[ "${CLOUD_RANGE}" = "" ]]; then
+	echo "Must specify CLOUD_RANGE"
+	exit 1
+fi
+
+if [[ "${NETWORK_INTERFACE}" = "" ]]; then
+	echo "Must specify NETWORK_INTERFACE"
+	exit 1
+fi
+
+if [[ "${NETWORK_GATEWAY}" = "" ]]; then
+	echo "Must specify NETWORK_GATEWAY"
+	exit 1
+fi
+
+if [[ "${BRIDGE_INTERFACE}" = "" ]]; then
+	BRIDGE_INTERFACE=br100
+fi
+
+CONFDIR=${BASEDIR}/localconf/
+CLOUD_CONF_FILE=${CONFDIR}/openstack.conf
+MACHINE_CONF_FILE=${CONFDIR}/${HEAD_IP}.conf
+
+set_config ${CLOUD_CONF_FILE} network head_node ${HEAD_IP}
+set_config ${CLOUD_CONF_FILE} network cloud_range ${CLOUD_RANGE}
+set_config ${CLOUD_CONF_FILE} network network_range ${NETWORK_RANGE}
+set_config ${CLOUD_CONF_FILE} network gateway ${NETWORK_GATEWAY}
+
+set_config ${MACHINE_CONF_FILE} network bridge_interface ${BRIDGE_INTERFACE}
+set_config ${MACHINE_CONF_FILE} network my_ip ${HEAD_IP}
+set_config ${MACHINE_CONF_FILE} network network_interface ${NETWORK_INTERFACE}
+
+generate_secrets ${CLOUD_CONF_FILE}
+
+# Add all the roles to the head node
+
+# TODO: Don't put all the roles on the one node / allow failover
+add_role ${HEAD_IP} db
+add_role ${HEAD_IP} messagequeue
+add_role ${HEAD_IP} identity
+add_role ${HEAD_IP} webui
+add_role ${HEAD_IP} imagestore
+
+add_role ${HEAD_IP} compute
+add_role ${HEAD_IP} objectstore
+

@@ -1,7 +1,0 @@
-#!/bin/bash -x
-
-set -e
-
-. utils/common
-
-PGPASSWORD=${DB_PASSWORD_COMPUTE} psql --db openstack_compute --user openstack_compute --host 127.0.0.1

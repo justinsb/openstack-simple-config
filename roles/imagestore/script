@@ -1,0 +1,85 @@
+#!/bin/bash
+
+#====================================
+# Begin boilerplate
+set -e
+
+PRG="$0"
+while [ -h "$PRG" ] ; do
+   PRG=`readlink "$PRG"`
+done
+
+pushd `dirname $PRG` > /dev/null
+cd ..
+cd ..
+BASEDIR=`pwd`
+popd > /dev/null
+
+. ${BASEDIR}/bin/helpers/functions
+
+# End boilerplate
+#====================================
+
+ROLEDIR=${BASEDIR}/roles/imagestore/
+
+load_etc_config
+
+install_packages common
+install_packages imagestore
+
+mkdir -p /var/openstack/imagestore/conf
+mkdir -p /var/log/openstack
+
+cp /opt/openstack/glance/etc/* /var/openstack/imagestore/conf
+
+# Force logging to go to stdout (so we don't have two log files)
+set_config /var/openstack/imagestore/conf/glance-api.conf DEFAULT use_syslog False
+set_config /var/openstack/imagestore/conf/glance-api.conf DEFAULT log_file ""
+
+set_config /var/openstack/imagestore/conf/glance-registry.conf DEFAULT use_syslog False
+set_config /var/openstack/imagestore/conf/glance-registry.conf DEFAULT log_file ""
+
+# Repoint the policy.json file so we don't have to install it in /etc/glance
+set_config /var/openstack/imagestore/conf/glance-api.conf DEFAULT policy_file /var/openstack/imagestore/conf/policy.json
+set_config /var/openstack/imagestore/conf/glance-registry.conf DEFAULT policy_file /var/openstack/imagestore/conf/policy.json
+
+DB_PASSWORD_IMAGESTORE=`get_config /etc/openstack/openstack.conf secrets imagestore_db_password`
+DB_CONNECTION="postgresql://openstack_imagestore:${DB_PASSWORD_IMAGESTORE}@localhost/openstack_imagestore"
+
+set_config /var/openstack/imagestore/conf/glance-registry.conf DEFAULT sql_connection $DB_CONNECTION
+
+set_config /var/openstack/imagestore/conf/glance-api.conf paste_deploy flavor keystone
+set_config /var/openstack/imagestore/conf/glance-registry.conf paste_deploy flavor keystone
+
+set_config /var/openstack/imagestore/conf/glance-api.conf DEFAULT debug True
+set_config /var/openstack/imagestore/conf/glance-registry.conf DEFAULT debug True
+
+SERVICE_TENANT_NAME=`get_config /etc/openstack/openstack.conf secrets service_tenant_name --default services`
+SERVICE_USER=`get_config /etc/openstack/openstack.conf secrets imagestore_service_username --default glance`
+SERVICE_PASSWORD=`get_config /etc/openstack/openstack.conf secrets imagestore_service_password`
+
+# Modified from devstack
+function glance_config {
+    sed -e "
+        s,%SERVICE_TENANT_NAME%,$SERVICE_TENANT_NAME,g;
+        s,%SERVICE_USER%,$SERVICE_USER,g;
+        s,%SERVICE_PASSWORD%,$SERVICE_PASSWORD,g;
+    " -i $1
+}
+
+glance_config /var/openstack/imagestore/conf/glance-api.conf
+glance_config /var/openstack/imagestore/conf/glance-api-paste.ini
+glance_config /var/openstack/imagestore/conf/glance-registry.conf
+glance_config /var/openstack/imagestore/conf/glance-registry-paste.ini
+
+# Start service
+SERVICES="openstack-imagestore-registry openstack-imagestore-api"
+
+for s in ${SERVICES}
+do
+	cp ${ROLEDIR}/supervisor/${s}.conf /etc/supervisor/conf.d/
+	activate_service ${s}
+done
+
+supervisorctl status
+
