@@ -78,7 +78,7 @@ function set_config() {
 }
 
 function get_config() {
-	${HELPERSDIR}/openstack-config-get $@
+	${HELPERSDIR}/openstack-config-get "$@"
 }
 
 function git_get() {
@@ -171,7 +171,7 @@ function keystone_shell() {
 	export SERVICE_TOKEN=${IDENTITY_SERVICE_TOKEN}
 	
 	export PYTHONPATH=${CODEDIR}/python-keystoneclient
-	python -c "import keystoneclient.shell; keystoneclient.shell.main()" $@
+	python -c "import keystoneclient.shell; keystoneclient.shell.main()" "$@"
 }
 
 function keystone_get_id() {
