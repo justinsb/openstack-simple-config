@@ -1,15 +1,17 @@
 Installing the first node
 =========================
 
+```bash
+
 export HEAD_IP=192.168.192.1
 export NETWORK_RANGE=192.168.0.0/16
 export CLOUD_RANGE=192.168.192.0/18
 export NETWORK_INTERFACE=eth0
 export NETWORK_GATEWAY=192.168.1.1
 
-bin/cloud-initialize 
+bin/cloud-create 
 
-bin/fetch-code
+bin/code-get
 bin/ring-create ${HEAD_IP}
 
 # Update the networking configuration of the node
@@ -21,18 +23,26 @@ bin/network-apply ${CLOUD_IP} ${CURRENT_IP}
 
 bin/node-update ${HEAD_IP}
 
-roles/keystone/bootstrap
-roles/compute/bootstrap
+# Create system users etc
+bin/cloud-initialize
+```
 
-# Create a user
+Create a user
+=============
+
+```bash
+
 USER=`whoami`
 TENANT="privatecloud"
 PASS="secret"
-bin/create-user ${USER} ${TENANT} ${PASS}
+bin/user-create ${USER} ${TENANT} ${PASS}
 
+```
 
 Installing additional nodes
 ===========================
+
+```bash
 
 CLOUD_IP=192.168.192.100
 
@@ -50,4 +60,4 @@ bin/node-update ${CLOUD_IP}
 bin/node-role-add ${CLOUD_IP} objectstore
 bin/node-update ${CLOUD_IP}
 
-
+```

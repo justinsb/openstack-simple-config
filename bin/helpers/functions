@@ -165,3 +165,85 @@ iface ${BRIDGE_INTERFACE} inet static
 EOF
 
 }
+
+function keystone_shell() {
+	export SERVICE_ENDPOINT=${IDENTITY_SERVICE_ENDPOINT}
+	export SERVICE_TOKEN=${IDENTITY_SERVICE_TOKEN}
+	
+	export PYTHONPATH=${CODEDIR}/python-keystoneclient
+	python -c "import keystoneclient.shell; keystoneclient.shell.main()" $@
+}
+
+function keystone_get_id() {
+	# TODO: keystone should just take usernames
+	keystone_shell $1-list | grep $2 |  awk ' { print $2 }'
+}
+
+function keystone_create_tenant() {
+	local TENANT=$1
+	TENANT_ID=$(keystone_get_id tenant ${TENANT})
+	if [[ ${TENANT_ID} == "" ]]; then
+		keystone_shell tenant-create --name ${TENANT}
+		TENANT_ID=$(keystone_get_id tenant ${TENANT})
+	fi
+	
+	keystone_get_id tenant ${TENANT}
+}
+
+function keystone_create_role() {
+	local NAME=$1
+	local ID=$(keystone_get_id role ${NAME})
+	if [[ ${ID} == "" ]]; then
+		keystone_shell role-create --name ${NAME}
+		ID=$(keystone_get_id role ${NAME})
+	fi
+	
+	keystone_get_id role ${NAME}
+}
+
+function keystone_create_user() {
+	local USER_NAME=$1
+	local PASS=$2
+	local TENANT_NAME=$3
+	
+	TENANT_ID=$(keystone_get_id tenant ${TENANT_NAME})
+	local USER_ID=$(keystone_get_id role ${USER_NAME})
+	if [[ ${USER_ID} == "" ]]; then
+		keystone_shell user-create --name ${USER_NAME} --pass $PASS --tenant_id $TENANT_ID
+		ID=$(keystone_get_id user ${USER_NAME})
+	fi
+	
+	keystone_get_id user ${USER_NAME}
+}
+
+function keystone_add_user_to_role() {
+	local TENANT_NAME=$1
+	local USER_NAME=$2
+	local ROLE_NAME=$3
+	
+	TENANT_ID=$(keystone_get_id tenant ${TENANT_NAME})
+	USER_ID=$(keystone_get_id user ${USER_NAME})
+	ROLE_ID=$(keystone_get_id role ${ROLE_NAME})
+	
+	# TODO: Error handling
+	keystone_shell user-role-add --tenant_id $TENANT_ID --user $USER_ID --role $ROLE_ID || true
+}
+
+function keystone_create_endpoint() {
+	# TODO: Make this idempotent
+	keystone_shell service-create --name=$1 \
+	                       --type=$2 \
+	                        --description="$3"
+	
+	SERVICE_ID=$(keystone_get_id service $1)
+	
+	# TODO: How to make this idempotent??
+	keystone_shell endpoint-create --region ${REGION} --service_id $SERVICE_ID \
+	        --publicurl "$4" \
+	        --adminurl "$4" \
+	        --internalurl "$4"
+}
+
+
+
+

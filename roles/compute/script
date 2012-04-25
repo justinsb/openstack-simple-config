@@ -104,6 +104,19 @@ if [[ ${HEAD_IP} == ${TARGET_IP} ]]; then
 	popd
 fi
 
+# Create network if not yet configured
+if [[ ${HEAD_IP} == ${TARGET_IP} ]]; then
+	CLOUD_RANGE_COUNT=`${HELPERSDIR}/openstack-netutils ${CLOUD_RANGE} count`
+	NETWORK_RANGE_COUNT=`${HELPERSDIR}/openstack-netutils ${NETWORK_RANGE} count`
+
+	pushd /opt/openstack/nova
+	NETWORK_LIST=`bin/nova-manage --config=/var/openstack/compute/compute.conf network list`
+	if [[ "${NETWORK_LIST}" != "*${NETWORK_RANGE}*" ]]; then
+		bin/nova-manage --config=/var/openstack/compute/compute.conf network create private ${NETWORK_RANGE} 1 ${NETWORK_RANGE_COUNT} --fixed_cidr=${CLOUD_RANGE} --gateway=${NETWORK_GATEWAY}
+	fi
+	popd
+fi
+
 SERVICES="openstack-compute-cpu"
 
 if [[ ${HEAD_IP} == ${TARGET_IP} ]]; then
