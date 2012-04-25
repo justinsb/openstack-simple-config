@@ -207,7 +207,7 @@ function keystone_create_user() {
 	local TENANT_NAME=$3
 	
 	TENANT_ID=$(keystone_get_id tenant ${TENANT_NAME})
-	local USER_ID=$(keystone_get_id role ${USER_NAME})
+	local USER_ID=$(keystone_get_id user ${USER_NAME})
 	if [[ ${USER_ID} == "" ]]; then
 		keystone_shell user-create --name ${USER_NAME} --pass $PASS --tenant_id $TENANT_ID
 		ID=$(keystone_get_id user ${USER_NAME})
@@ -231,9 +231,7 @@ function keystone_add_user_to_role() {
 
 function keystone_create_endpoint() {
 	# TODO: Make this idempotent
-	keystone_shell service-create --name=$1 \
-	                       --type=$2 \
-	                        --description="$3"
+	keystone_shell service-create --name="$1" --type="$2" --description="$3"
 	
 	SERVICE_ID=$(keystone_get_id service $1)
 	

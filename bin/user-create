@@ -32,16 +32,7 @@ if [[ ${USER} == "" || ${TENANT} == "" || ${PASS} == "" ]]; then
 	exit 1
 fi
 
-# TODO: These need to work using names, not just uuids
-#keystone tenant-create --name $TENANT
-#keystone user-create --name=$USER --pass=$PASS
-#keystone user-role-add --user $USER --role admin --tenant_id $TENANT --byname true
-
-TENANT_ID=$(keystone_create_tenant ${TENANT})
-
-keystone_shell user-create --name=${USER} --pass=${PASS}
-
-USER_ID=$(keystone_get_id user ${USER})
-ROLE_ID=$(keystone_get_id role admin)
-
-keystone_shell user-role-add --user ${USER_ID} --role ${ROLE_ID} --tenant_id ${TENANT_ID}
+keystone_create_tenant ${TENANT}
+keystone_create_user ${USER} ${PASS} ${TENANT}
+	
+keystone_add_user_to_role ${TENANT} ${USER} admin

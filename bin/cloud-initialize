@@ -33,10 +33,10 @@ keystone_create_role KeystoneServiceAdmin
 
 # Configure service users/roles
 keystone_create_user $NOVA_SERVICE_USERNAME "$NOVA_SERVICE_PASSWORD" $SERVICE_TENANT_NAME
-add_user_to_role $SERVICE_TENANT_NAME $NOVA_SERVICE_USERNAME $NOVA_ID admin
+keystone_add_user_to_role $SERVICE_TENANT_NAME $NOVA_SERVICE_USERNAME $NOVA_ID admin
 
-create_user $GLANCE_SERVICE_USERNAME "$GLANCE_SERVICE_PASSWORD" $SERVICE_TENANT_NAME
-add_user_to_role $SERVICE_TENANT_NAME $GLANCE_SERVICE_USERNAME admin
+keystone_create_user $GLANCE_SERVICE_USERNAME "$GLANCE_SERVICE_PASSWORD" $SERVICE_TENANT_NAME
+keystone_add_user_to_role $SERVICE_TENANT_NAME $GLANCE_SERVICE_USERNAME admin
 
 REGION=privatecloud
 
