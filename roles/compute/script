@@ -110,8 +110,12 @@ if [[ ${HEAD_IP} == ${TARGET_IP} ]]; then
 	NETWORK_RANGE_COUNT=`${HELPERSDIR}/openstack-netutils ${NETWORK_RANGE} count`
 
 	pushd /opt/openstack/nova
-	NETWORK_LIST=`bin/nova-manage --config=/var/openstack/compute/compute.conf network list`
-	if [[ "${NETWORK_LIST}" != "*${NETWORK_RANGE}*" ]]; then
+	
+	# TODO: If there are no networks, nova-manage currently fails on a network list
+	# I think this is a bug though, so we default the value to empty
+	NETWORK_LIST=""
+	NETWORK_LIST=`bin/nova-manage --config=/var/openstack/compute/compute.conf network list` || true
+	if [[ "${NETWORK_LIST}" != *"${NETWORK_RANGE}"* ]]; then
 		bin/nova-manage --config=/var/openstack/compute/compute.conf network create private ${NETWORK_RANGE} 1 ${NETWORK_RANGE_COUNT} --fixed_cidr=${CLOUD_RANGE} --gateway=${NETWORK_GATEWAY}
 	fi
 	popd
