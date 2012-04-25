@@ -21,4 +21,21 @@ popd > /dev/null
 
 load_local_config
 
-PGPASSWORD=${DB_PASSWORD_COMPUTE} psql --db openstack_compute --user openstack_compute --host ${HEAD_IP}
+DB=$1
+
+if [[ "${DB}" = "" ]]; then
+	DB="compute"
+fi
+
+case $DB in
+	compute)
+		PGPASSWORD=${DB_PASSWORD_COMPUTE} psql --db openstack_compute --user openstack_compute --host ${HEAD_IP}
+		;;
+	identity)
+		PGPASSWORD=${DB_PASSWORD_IDENTITY} psql --db openstack_identity --user openstack_identity --host ${HEAD_IP}
+		;;
+	*)
+		echo "DB not known: $DB"
+		exit 1
+		;;
+esac
