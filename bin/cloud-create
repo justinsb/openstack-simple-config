@@ -51,6 +51,10 @@ fi
 CLOUD_CONF_FILE=${CONFDIR}/openstack.conf
 MACHINE_CONF_FILE=${CONFDIR}/${HEAD_IP}.conf
 
+mkdir -p ${CONFDIR}
+touch ${CLOUD_CONF_FILE}
+touch ${MACHINE_CONF_FILE}
+
 set_config ${CLOUD_CONF_FILE} network head_node ${HEAD_IP}
 set_config ${CLOUD_CONF_FILE} network cloud_range ${CLOUD_RANGE}
 set_config ${CLOUD_CONF_FILE} network network_range ${NETWORK_RANGE}
