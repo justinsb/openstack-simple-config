@@ -20,6 +20,8 @@ python-lxml
 python-netaddr
 python-passlib
 
+python-numpy
+
 libvirt-bin
 kvm
 
