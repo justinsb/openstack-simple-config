@@ -43,6 +43,7 @@ for ROLE in "db" "messagequeue" "identity" "imagestore" "compute" "objectstore" 
 	
 	if [[ "${IN_ROLE}" == "yes" ]]; then
 		if [[ -d ${CONFDIR}/${ROLE} ]]; then
+			ssh ${ROOT_USER}@${TARGET_IP} mkdir -p /var/openstack/${ROLE}/config/
 			rsync -arv ${CONFDIR}/${ROLE}/* ${ROOT_USER}@${TARGET_IP}:/var/openstack/${ROLE}/config/
 		fi
 		
