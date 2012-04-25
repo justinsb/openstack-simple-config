@@ -20,11 +20,12 @@ popd > /dev/null
 #====================================
 
 get_target $1
+CURRENT_IP=$2
 
 load_local_config
 
 if [[ "${CURRENT_IP}" == "" ]]; then
-	echo "CURRENT_IP must be set"
+	echo "Arguments: <desiredip> <currentip>"
 	exit 1
 fi
 
@@ -33,6 +34,7 @@ build_network_config
 ssh ${ROOT_USER}@${CURRENT_IP} apt-get install --yes bridge-utils
 build_network_config | ssh ${ROOT_USER}@${CURRENT_IP} "cat > /etc/network/interfaces"
 ssh ${ROOT_USER}@${CURRENT_IP} "/etc/init.d/networking restart"
+
 
 #CURRENT_IP=${CLOUD_IP}
 
