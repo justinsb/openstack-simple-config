@@ -46,7 +46,7 @@ function load_cloud_config() {
 function load_machine_config() {
 	# Per-machine configuration
 		
-	MY_IP=`get_config ${MACHINE_CONF_FILE} network my_ip`
+	TARGET_IP=`get_config ${MACHINE_CONF_FILE} network my_ip`
 	BRIDGE_INTERFACE=`get_config ${MACHINE_CONF_FILE} network bridge_interface`
 	NETWORK_INTERFACE=`get_config ${MACHINE_CONF_FILE} network network_interface`
 }
