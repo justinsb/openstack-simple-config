@@ -24,10 +24,17 @@ get_target $1
 load_local_config
 
 ROOT_USER="root"
+
+ssh ${ROOT_USER}@${TARGET_IP} apt-get install --yes rsync python python-iniparse python-netaddr
+
 REMOTE_DIR=`ssh ${ROOT_USER}@${TARGET_IP} mktemp -d`
 
 rsync -arv --exclude ".git/" --exclude "code/" ${BASEDIR}/* ${ROOT_USER}@${TARGET_IP}:${REMOTE_DIR}
 rsync -arv --exclude ".git/" ${BASEDIR}/code/* ${ROOT_USER}@${TARGET_IP}:/opt/openstack/
+
+ssh ${ROOT_USER}@${TARGET_IP} mkdir -p /etc/openstack/
+scp ${CONFDIR}/openstack.conf ${ROOT_USER}@${TARGET_IP}:/etc/openstack/openstack.conf
+scp ${CONFDIR}/${TARGET_IP}.conf ${ROOT_USER}@${TARGET_IP}:/etc/openstack/machine.conf
 
 for ROLE in "db" "messagequeue" "identity" "imagestore" "compute" "objectstore" "webui"; do
 	IN_ROLE=$(get_config ${MACHINE_CONF_FILE} roles ${ROLE} --default "no")
